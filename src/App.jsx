@@ -62,7 +62,7 @@ function App() {
       items: [
         {
           name: 'Oriental Breakfast',
-          description: 'With a selection of bread and breadsticks.',
+          description: 'Traditional Middle Eastern breakfast with hummus, falafel, and fresh pita bread.',
           calories: '480.13 cal',
           price: '﷼ 75',
           icons: ['◔'],
@@ -71,7 +71,7 @@ function App() {
 
         {
           name: 'American Breakfast',
-          description: 'With a selection of bread and breadsticks.',
+          description: 'Classic breakfast with scrambled eggs, bacon, sausage, and toast.',
           calories: '480.13 cal',
           price: '﷼ 75',
           icons: ['◔'],
@@ -80,7 +80,7 @@ function App() {
 
         {
           name: 'Omelette',
-          description: 'With a selection of bread and breadsticks.',
+          description: 'Fluffy omelette with choice of cheese, vegetables, and meat fillings.',
           calories: '480.13 cal',
           price: '﷼ 32',
           icons: ['◔'],
@@ -89,7 +89,7 @@ function App() {
 
         {
           name: 'Fried Eggs',
-          description: 'With a selection of bread and breadsticks.',
+          description: 'Sunny-side up or over-easy eggs served with your choice of sides.',
           calories: '480.13 cal',
           price: '﷼ 48',
           icons: ['◔'],
@@ -98,7 +98,7 @@ function App() {
 
         {
           name: 'Haloumi Sandwich',
-          description: 'With a selection of bread and breadsticks.',
+          description: 'Grilled haloumi cheese with fresh tomato and herbs in toasted bread.',
           calories: '480.13 cal',
           price: '﷼ 48',
           icons: ['◔'],
@@ -107,7 +107,7 @@ function App() {
 
         {
           name: 'SOL Club Sandwich',
-          description: 'With a selection of bread and breadsticks.',
+          description: 'Triple layer breakfast sandwich with eggs, bacon, and fresh vegetables.',
           calories: '480.13 cal',
           price: '﷼ 48',
           icons: ['◔'],
@@ -116,7 +116,7 @@ function App() {
 
         {
           name: 'Tuna Sandwich',
-          description: 'With a selection of bread and breadsticks.',
+          description: 'Fresh tuna salad with lettuce, tomato, and mayo on soft bread.',
           calories: '480.13 cal',
           price: '﷼ 48',
           icons: ['◔'],
@@ -125,7 +125,7 @@ function App() {
 
         {
           name: 'Smoked Salmon Sandwich',
-          description: 'With a selection of bread and breadsticks.',
+          description: 'Delicate smoked salmon with cream cheese and fresh dill on bagel.',
           calories: '480.13 cal',
           price: '﷼ 48',
           icons: ['◔'],
@@ -134,7 +134,7 @@ function App() {
 
         {
           name: 'Smoked Salmon Sandwich with Egg',
-          description: 'With a selection of bread and breadsticks.',
+          description: 'Premium smoked salmon with scrambled eggs and capers on toasted bread.',
           calories: '480.13 cal',
           price: '﷼ 48',
           icons: ['◔'],
@@ -143,7 +143,7 @@ function App() {
 
         {
           name: 'Hash Browns',
-          description: 'With a selection of bread and breadsticks.',
+          description: 'Crispy shredded potatoes, golden-fried and served with sour cream.',
           calories: '480.13 cal',
           price: '﷼ 48',
           icons: ['◔'],
@@ -152,10 +152,10 @@ function App() {
 
         {
           name: 'Bread Basket',
-          description: 'With a selection of bread and breadsticks.',
+          description: 'Assorted fresh breads and pastries with butter and jam.',
           calories: '480.13 cal',
           price: '﷼ 48',
-          icons: ['◔'],
+          icons: ['★'],
           image: 'https://images.unsplash.com/photo-1515003197210-e0cd71810b5f?auto=format&fit=crop&w=600&q=80',
         },
       ],
@@ -164,12 +164,116 @@ function App() {
       title: 'LUNCH',
       items: [
         {
-          name: 'Garlic Bread & Tomato',
-          description: 'Pizza dough with tomato sauce and fresh tomato with garlic.',
-          calories: '440.02 cal',
+          name: 'Grilled Chicken Burger',
+          description: 'Juicy grilled chicken breast with lettuce and tomato.',
+          calories: '520 cal',
+          price: '﷼ 52',
+          icons: ['★'],
+          image: 'https://images.unsplash.com/photo-1562547256-a6d86a26cef8?auto=format&fit=crop&w=600&q=80',
+        },
+        {
+          name: 'Steak Sandwich',
+          description: 'Tender beef steak with grilled onions and sauce.',
+          calories: '580 cal',
+          price: '﷼ 65',
+          icons: ['★'],
+          image: 'https://images.unsplash.com/photo-1553979459-d2229ba7433b?auto=format&fit=crop&w=600&q=80',
+        },
+        {
+          name: 'Chicken Fajita Sandwich',
+          description: 'Spiced grilled chicken with peppers and onions.',
+          calories: '510 cal',
+          price: '﷼ 55',
+          icons: ['★'],
+          image: 'https://images.unsplash.com/photo-1565299585323-38d6b0865b47?auto=format&fit=crop&w=600&q=80',
+        },
+        {
+          name: 'Diet Chicken Sandwich',
+          description: 'Grilled chicken with fresh vegetables and light sauce.',
+          calories: '380 cal',
+          price: '﷼ 48',
+          icons: ['★'],
+          image: 'https://images.unsplash.com/photo-1562547256-a6d86a26cef8?auto=format&fit=crop&w=600&q=80',
+        },
+        {
+          name: 'SOL Club Sandwich',
+          description: 'Triple layer with chicken, bacon and fresh ingredients.',
+          calories: '620 cal',
+          price: '﷼ 58',
+          icons: ['★'],
+          image: 'https://images.unsplash.com/photo-1551782450-a2132b4ba21d?auto=format&fit=crop&w=600&q=80',
+        },
+        {
+          name: 'Crispy Chicken Sandwich',
+          description: 'Golden fried chicken with pickles and mayo.',
+          calories: '540 cal',
+          price: '﷼ 50',
+          icons: ['★'],
+          image: 'https://images.unsplash.com/photo-1562547256-a6d86a26cef8?auto=format&fit=crop&w=600&q=80',
+        },
+        {
+          name: 'Haloumi Sandwich',
+          description: 'Grilled haloumi cheese with fresh bread and sauce.',
+          calories: '480 cal',
+          price: '﷼ 48',
+          icons: ['★'],
+          image: 'https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?auto=format&fit=crop&w=600&q=80',
+        },
+        {
+          name: 'Tuna Sandwich',
+          description: 'Fresh tuna salad with lettuce and tomato.',
+          calories: '420 cal',
           price: '﷼ 45',
-          icons: ['❀', '◌'],
-          image: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=600&q=80',
+          icons: ['★'],
+          image: 'https://images.unsplash.com/photo-1559333086-b0a56225a93c?auto=format&fit=crop&w=600&q=80',
+        },
+        {
+          name: 'SOL Sub Sandwich',
+          description: 'Long sub filled with assorted meats and vegetables.',
+          calories: '600 cal',
+          price: '﷼ 55',
+          icons: ['★'],
+          image: 'https://images.unsplash.com/photo-1511689915989-24d7b1295f0e?auto=format&fit=crop&w=600&q=80',
+        },
+        {
+          name: 'French Fries',
+          description: 'Crispy golden fries with seasoning.',
+          calories: '350 cal',
+          price: '﷼ 28',
+          icons: ['★'],
+          image: 'https://images.unsplash.com/photo-1599599810694-17b2e6c81a47?auto=format&fit=crop&w=600&q=80',
+        },
+        {
+          name: 'Hash Browns',
+          description: 'Crispy shredded potato patties.',
+          calories: '320 cal',
+          price: '﷼ 25',
+          icons: ['★'],
+          image: 'https://images.unsplash.com/photo-1609501676725-7186f017a4b0?auto=format&fit=crop&w=600&q=80',
+        },
+        {
+          name: 'Onion Rings',
+          description: 'Crispy battered onion rings with dipping sauce.',
+          calories: '380 cal',
+          price: '﷼ 30',
+          icons: ['★'],
+          image: 'https://images.unsplash.com/photo-1591080876316-37a2e8da7a59?auto=format&fit=crop&w=600&q=80',
+        },
+        {
+          name: 'Cheeseburger',
+          description: 'Classic burger with melted cheddar cheese.',
+          calories: '540 cal',
+          price: '﷼ 48',
+          icons: ['★'],
+          image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=600&q=80',
+        },
+        {
+          name: 'Sol Beach Burger',
+          description: 'Premium burger with special sauce and fresh toppings.',
+          calories: '620 cal',
+          price: '﷼ 62',
+          icons: ['★'],
+          image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=600&q=80',
         },
       ],
     },
