@@ -67,12 +67,6 @@ function App() {
           icons: ['🥗'],
           image: 'https://images.unsplash.com/photo-1514539079130-25950c84af65?auto=format&fit=crop&w=600&q=80',
         },
-          description: 'A refreshing blend of parsley, tomatoes, bulgur, and lemon dressing.',
-          calories: '180 cal',
-          price: '﷼ 38',
-          icons: ['🥗'],
-          image: 'https://images.unsplash.com/photo-1514539079130-25950c84af65?auto=format&fit=crop&w=600&q=80',
-        },
         {
           name: 'Rocca Salad',
           description: 'Fresh arugula with cherry tomatoes, parmesan, and balsamic glaze.',
