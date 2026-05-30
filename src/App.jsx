@@ -228,7 +228,7 @@ function App() {
       ],
     },
     {
-      title: 'LUNCH',
+      title: 'BURGERS & SANDWICHES',
       items: [
         {
           name: 'Grilled Chicken Burger',
@@ -237,6 +237,22 @@ function App() {
           price: '﷼ 52',
           icons: ['★'],
           image: 'https://images.unsplash.com/photo-1562547256-a6d86a26cef8?auto=format&fit=crop&w=600&q=80',
+        },
+        {
+          name: 'Cheeseburger',
+          description: 'Classic burger with melted cheddar cheese.',
+          calories: '540 cal',
+          price: '﷼ 48',
+          icons: ['★'],
+          image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=600&q=80',
+        },
+        {
+          name: 'Sol Beach Burger',
+          description: 'Premium burger with special sauce and fresh toppings.',
+          calories: '620 cal',
+          price: '﷼ 62',
+          icons: ['★'],
+          image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=600&q=80',
         },
         {
           name: 'Steak Sandwich',
@@ -325,22 +341,6 @@ function App() {
           price: '﷼ 30',
           icons: ['★'],
           image: 'https://images.unsplash.com/photo-1591080876316-37a2e8da7a59?auto=format&fit=crop&w=600&q=80',
-        },
-        {
-          name: 'Cheeseburger',
-          description: 'Classic burger with melted cheddar cheese.',
-          calories: '540 cal',
-          price: '﷼ 48',
-          icons: ['★'],
-          image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=600&q=80',
-        },
-        {
-          name: 'Sol Beach Burger',
-          description: 'Premium burger with special sauce and fresh toppings.',
-          calories: '620 cal',
-          price: '﷼ 62',
-          icons: ['★'],
-          image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=600&q=80',
         },
       ],
     },
