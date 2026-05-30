@@ -57,8 +57,35 @@ function App() {
         
       ],
     },
-    {
-      title: 'BREAKFAST',
+    {      title: 'SALADS',
+      items: [
+        {
+          name: 'Mediterranean Salad',
+          description: 'A fresh mix of cucumbers, tomatoes, olives, feta, and herbs.',
+          calories: '230 cal',
+          price: '﷼ 42',
+          icons: ['🥗'],
+          image: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=600&q=80',
+        },
+        {
+          name: 'Chicken Caesar Salad',
+          description: 'Crispy romaine, grilled chicken, parmesan, and creamy dressing.',
+          calories: '310 cal',
+          price: '﷼ 48',
+          icons: ['🥗'],
+          image: 'https://images.unsplash.com/photo-1568051243854-4f658cb0dbdc?auto=format&fit=crop&w=600&q=80',
+        },
+        {
+          name: 'Quinoa Power Bowl',
+          description: 'Nutritious quinoa with avocado, roasted veggies, and lemon tahini.',
+          calories: '290 cal',
+          price: '﷼ 50',
+          icons: ['🥗'],
+          image: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=600&q=80',
+        },
+      ],
+    },
+    {      title: 'BREAKFAST',
       items: [
         {
           name: 'Oriental Breakfast',
