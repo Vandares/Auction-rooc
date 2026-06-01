@@ -71,7 +71,7 @@ function App() {
           calories: '320 cal',
           price: '﷼ 25',
           icons: ['🍟'],
-          image: 'https://images.unsplash.com/photo-1609501676725-7186f017a4b0?auto=format&fit=crop&w=600&q=80',
+          image: 'https://i.ibb.co/WW8V0tZN/hashbrowns.png',
         },
         {
           name: 'Onion Rings',
