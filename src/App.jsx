@@ -95,6 +95,7 @@ function App() {
   const [saveMessage, setSaveMessage] = useState('')
   const [saveError, setSaveError] = useState('')
   const [dragInfo, setDragInfo] = useState(null)
+  const [itemToRemove, setItemToRemove] = useState(null)
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
@@ -1121,6 +1122,54 @@ function App() {
     )
   }
 
+  const handleRequestRemoveItem = (sectionTitle, itemId) => {
+    setItemToRemove({ sectionTitle, itemId })
+  }
+
+  const handleConfirmRemoveItem = () => {
+    if (!itemToRemove) return
+    const { sectionTitle, itemId } = itemToRemove
+    setSections((prevSections) =>
+      prevSections.map((section) => {
+        if (section.title !== sectionTitle) return section
+        return {
+          ...section,
+          items: section.items.filter((item) => item.id !== itemId),
+        }
+      })
+    )
+    setItemToRemove(null)
+  }
+
+  const handleCancelRemoveItem = () => {
+    setItemToRemove(null)
+  }
+
+  const getNewItem = (sectionTitle) => ({
+    id: `${sectionTitle}-${Date.now()}`.replace(/\s+/g, '-'),
+    name: 'New item',
+    description: '',
+    calories: '',
+    price: '',
+    icons: [],
+    image: '',
+    visible: true,
+    allergens: [],
+  })
+
+  const handleAddItem = (sectionTitle) => {
+    setSections((prevSections) =>
+      prevSections.map((section) =>
+        section.title !== sectionTitle
+          ? section
+          : {
+              ...section,
+              items: [...section.items, getNewItem(sectionTitle)],
+            }
+      )
+    )
+  }
+
   const handleDragStart = (event, sectionTitle, itemId) => {
     event.dataTransfer.effectAllowed = 'move'
     setDragInfo({ sectionTitle, itemId })
@@ -1236,6 +1285,26 @@ function App() {
         </div>
       )}
 
+      {itemToRemove && (
+        <div className="confirm-overlay">
+          <div className="confirm-box">
+            <button className="confirm-close" type="button" onClick={handleCancelRemoveItem}>
+              ✕
+            </button>
+            <h2>Confirm removal</h2>
+            <p>Are you sure you want to remove this item? This action cannot be undone.</p>
+            <div className="confirm-actions">
+              <button className="confirm-button cancel" type="button" onClick={handleCancelRemoveItem}>
+                Cancel
+              </button>
+              <button className="confirm-button danger" type="button" onClick={handleConfirmRemoveItem}>
+                Remove
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {isAdmin ? (
         <>
           <header className="hero admin-hero">
@@ -1276,6 +1345,13 @@ function App() {
                         {item.name}
                         {item.visible === false && <span className="hidden-badge">Hidden</span>}
                       </div>
+                      <button
+                        type="button"
+                        className="admin-remove-item-button"
+                        onClick={() => handleRequestRemoveItem(section.title, item.id)}
+                      >
+                        ✕
+                      </button>
                     </div>
                     <label>
                       Name
@@ -1378,6 +1454,15 @@ function App() {
                     </div>
                   </div>
                 ))}
+              </div>
+              <div className="admin-add-item-row">
+                <button
+                  type="button"
+                  className="admin-button admin-add-button"
+                  onClick={() => handleAddItem(section.title)}
+                >
+                  + Add item
+                </button>
               </div>
             </section>
           ))}
