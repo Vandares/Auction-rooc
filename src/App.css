@@ -120,6 +120,7 @@ body {
   grid-template-columns: 1fr 130px;
   min-height: 190px;
   overflow: hidden;
+  align-items: stretch;
 }
 
 /* LEFT CONTENT */
@@ -127,6 +128,7 @@ body {
   padding: 14px;
   display: flex;
   flex-direction: column;
+  justify-content: space-between;
 }
 
 /* TITLE */
