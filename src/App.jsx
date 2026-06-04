@@ -1,5 +1,6 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect } from 'react'
 import './App.css'
+import { defaultSections } from './seedMenuData.js'
 import { db, storage, isFirebaseConfigured } from './firebaseConfig'
 import { doc, setDoc, onSnapshot, serverTimestamp } from 'firebase/firestore'
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage'
@@ -120,24 +121,6 @@ function App() {
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [showAdminLogin])
-
-  const defaultSections = useMemo(
-    () => [
-      { title: 'BREAKFAST', items: [] },
-      { title: 'APPETIZERS', items: [] },
-      { title: 'SALADS', items: [] },
-      { title: 'SANDWICHES', items: [] },
-      { title: 'BURGERS', items: [] },
-      { title: 'MAIN COURSES', items: [] },
-      { title: 'PASTA & PIZZA', items: [] },
-      { title: 'DESSERTS', items: [] },
-      { title: 'HOT DRINKS', items: [] },
-      { title: 'COLD DRINKS', items: [] },
-      { title: 'SMOOTHIES', items: [] },
-      { title: 'FRESH JUICES', items: [] },
-    ],
-    []
-  )
 
   const [sections, setSections] = useState(() => loadSections())
 

@@ -1,0 +1,14 @@
+export const defaultSections = [
+  { title: 'BREAKFAST', items: [] },
+  { title: 'APPETIZERS', items: [] },
+  { title: 'SALADS', items: [] },
+  { title: 'SANDWICHES', items: [] },
+  { title: 'BURGERS', items: [] },
+  { title: 'MAIN COURSES', items: [] },
+  { title: 'PASTA & PIZZA', items: [] },
+  { title: 'DESSERTS', items: [] },
+  { title: 'HOT DRINKS', items: [] },
+  { title: 'COLD DRINKS', items: [] },
+  { title: 'SMOOTHIES', items: [] },
+  { title: 'FRESH JUICES', items: [] },
+]
