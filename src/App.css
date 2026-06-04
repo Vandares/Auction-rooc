@@ -281,6 +281,20 @@ body {
     min-height: 0;
   }
 
+  .admin-allergen-chip {
+    padding: 4px 8px;
+    font-size: 10px;
+  }
+
+  .allergen-badge {
+    padding: 3px 5px;
+    font-size: 10px;
+  }
+
+  .icons-row span {
+    font-size: 10px;
+  }
+
   .admin-login-box,
   .admin-item,
   .admin-image-preview,
