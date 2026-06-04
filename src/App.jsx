@@ -226,8 +226,16 @@ function App() {
         return
       } catch (error) {
         console.error('Firebase save failed', error)
-        setSaveError('Failed to save to shared menu. Please try again.')
-        setSaveMessage('')
+        try {
+          localStorage.setItem('menuData', JSON.stringify(sections))
+          setSaveError('Saved locally, but failed to sync shared menu.')
+          setSaveMessage('Changes saved locally')
+          window.setTimeout(() => setSaveMessage(''), 2500)
+        } catch (storageError) {
+          console.error('Local save fallback failed', storageError)
+          setSaveError('Failed to save menu data. Please try again.')
+          setSaveMessage('')
+        }
         return
       }
     }
