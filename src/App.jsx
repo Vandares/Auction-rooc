@@ -1,5 +1,8 @@
 import { useState, useEffect, useMemo } from 'react'
 import './App.css'
+import { db, storage, isFirebaseConfigured } from './firebaseConfig'
+import { doc, setDoc, onSnapshot, serverTimestamp } from 'firebase/firestore'
+import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage'
 
 const allergenOptions = [
   { value: '🌾 Wheat', label: 'Wheat' },
@@ -92,6 +95,7 @@ function App() {
   const [saveMessage, setSaveMessage] = useState('')
   const [saveError, setSaveError] = useState('')
   const [dragInfo, setDragInfo] = useState(null)
+  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     const handleScroll = () => {
@@ -929,6 +933,33 @@ function App() {
     return () => window.removeEventListener('storage', handleStorage)
   }, [])
 
+  useEffect(() => {
+    if (!isFirebaseConfigured) return
+
+    setLoading(true)
+    const menuDocRef = doc(db, 'menu', 'default')
+
+    const unsubscribe = onSnapshot(
+      menuDocRef,
+      (snapshot) => {
+        if (snapshot.exists()) {
+          const data = snapshot.data()
+          if (data?.sections) {
+            setSections(addIds(normalizeSavedSections(data.sections)))
+          }
+        }
+        setLoading(false)
+      },
+      (error) => {
+        console.error('Firebase realtime error', error)
+        setSaveError('Firebase sync error. Check console for details.')
+        setLoading(false)
+      }
+    )
+
+    return unsubscribe
+  }, [])
+
   const handleLogin = (event) => {
     event.preventDefault()
     if (loginUsername === 'admin' && loginPassword === '1234') {
@@ -956,17 +987,46 @@ function App() {
     )
   )
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!canSave) {
       setSaveError('Name and Price are required for all visible items')
       setSaveMessage('')
       return
     }
 
-    localStorage.setItem('menuData', JSON.stringify(sections))
-    setSaveError('')
-    setSaveMessage('Changes saved successfully')
-    window.setTimeout(() => setSaveMessage(''), 2500)
+    if (isFirebaseConfigured) {
+      try {
+        const menuDocRef = doc(db, 'menu', 'default')
+        await setDoc(
+          menuDocRef,
+          {
+            sections,
+            updatedAt: serverTimestamp(),
+          },
+          { merge: true }
+        )
+        localStorage.setItem('menuData', JSON.stringify(sections))
+        setSaveError('')
+        setSaveMessage('Changes saved for everyone')
+        window.setTimeout(() => setSaveMessage(''), 2500)
+        return
+      } catch (error) {
+        console.error('Firebase save failed', error)
+        setSaveError('Failed to save to shared menu. Please try again.')
+        setSaveMessage('')
+        return
+      }
+    }
+
+    try {
+      localStorage.setItem('menuData', JSON.stringify(sections))
+      setSaveError('')
+      setSaveMessage('Changes saved locally')
+      window.setTimeout(() => setSaveMessage(''), 2500)
+    } catch (error) {
+      console.error('Failed to persist menu data', error)
+      setSaveError('Unable to save changes locally. The uploaded image may be too large.')
+    }
   }
 
   const handleItemChange = (sectionTitle, itemId, field, value) => {
@@ -1012,8 +1072,25 @@ function App() {
     )
   }
 
-  const handleImageUpload = (sectionTitle, itemId, file) => {
+  const handleImageUpload = async (sectionTitle, itemId, file) => {
     if (!file) return
+
+    if (isFirebaseConfigured) {
+      try {
+        const fileName = file.name.replace(/\s+/g, '-')
+        const storagePath = `menu-images/${sectionTitle.replace(/\s+/g, '-')}/${itemId}-${Date.now()}-${fileName}`
+        const uploadRef = storageRef(storage, storagePath)
+        const snapshot = await uploadBytes(uploadRef, file)
+        const imageUrl = await getDownloadURL(snapshot.ref)
+        handleItemChange(sectionTitle, itemId, 'image', imageUrl)
+        return
+      } catch (error) {
+        console.error('Firebase image upload failed', error)
+        setSaveError('Image upload failed. Please try again.')
+        return
+      }
+    }
+
     const reader = new FileReader()
     reader.onload = () => {
       handleItemChange(sectionTitle, itemId, 'image', reader.result)
