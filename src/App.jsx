@@ -898,7 +898,12 @@ function App() {
   })
 
   useEffect(() => {
-    localStorage.setItem('menuData', JSON.stringify(sections))
+    try {
+      localStorage.setItem('menuData', JSON.stringify(sections))
+    } catch (error) {
+      console.error('Failed to persist menu data', error)
+      setSaveError('Unable to save changes locally. The uploaded image may be too large.')
+    }
   }, [sections])
 
   const handleLogin = (event) => {
