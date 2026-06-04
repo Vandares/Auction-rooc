@@ -70,6 +70,18 @@ const addIds = (sections) =>
     })),
   }))
 
+const loadSections = () => {
+  const saved = localStorage.getItem('menuData')
+  if (!saved) return addIds(defaultSections)
+  try {
+    return addIds(normalizeSavedSections(JSON.parse(saved)))
+  } catch (error) {
+    console.error('Unable to parse saved menu data', error)
+    localStorage.removeItem('menuData')
+    return addIds(defaultSections)
+  }
+}
+
 function App() {
   const [showPopup, setShowPopup] = useState(true)
   const [isAdmin, setIsAdmin] = useState(false)
@@ -115,7 +127,7 @@ function App() {
           calories: '480 cal',
           price: '﷼ 75',
           icons: ['☀️'],
-          
+          image: 'https://images.unsplash.com/photo-1515003197210-e0cd71810b5f?auto=format&fit=crop&w=600&q=80',
         },
         {
           name: 'American Breakfast',
@@ -892,10 +904,7 @@ function App() {
     []
   )
 
-  const [sections, setSections] = useState(() => {
-    const saved = localStorage.getItem('menuData')
-    return saved ? normalizeSavedSections(JSON.parse(saved)) : addIds(defaultSections)
-  })
+  const [sections, setSections] = useState(() => loadSections())
 
   useEffect(() => {
     try {
@@ -905,6 +914,20 @@ function App() {
       setSaveError('Unable to save changes locally. The uploaded image may be too large.')
     }
   }, [sections])
+
+  useEffect(() => {
+    const handleStorage = (event) => {
+      if (event.key !== 'menuData' || !event.newValue) return
+      try {
+        setSections(addIds(normalizeSavedSections(JSON.parse(event.newValue))))
+      } catch (error) {
+        console.error('Failed to load menu data from storage event', error)
+      }
+    }
+
+    window.addEventListener('storage', handleStorage)
+    return () => window.removeEventListener('storage', handleStorage)
+  }, [])
 
   const handleLogin = (event) => {
     event.preventDefault()

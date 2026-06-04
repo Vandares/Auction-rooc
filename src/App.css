@@ -307,6 +307,8 @@ body {
   .admin-image-preview {
     min-height: 160px;
     margin: 12px 0;
+    max-height: 220px;
+    overflow: hidden;
   }
 
   .admin-row {
@@ -314,6 +316,9 @@ body {
   }
 
   .admin-image-preview img {
+    width: 100%;
+    height: auto;
+    max-height: 220px;
     object-fit: cover;
   }
 }
