@@ -1,8 +1,85 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import './App.css'
+
+const allergenOptions = [
+  { value: '🌾 Wheat', label: 'Wheat' },
+  { value: '🥛 Milk', label: 'Milk' },
+  { value: '🥚 Eggs', label: 'Eggs' },
+  { value: '🥜 Tree Nuts', label: 'Tree Nuts' },
+  { value: '🐟 Fish', label: 'Fish' },
+  { value: '🦐 Shellfish', label: 'Shellfish' },
+  { value: '🍞 Gluten', label: 'Gluten' },
+  { value: '🌿 Soy', label: 'Soy' },
+  { value: '🌻 Sesame', label: 'Sesame' },
+]
+
+const allergenNormalizeMap = {
+  'قمح': '🌾 Wheat',
+  'حليب': '🥛 Milk',
+  'بيض': '🥚 Eggs',
+  'مكسرات': '🥜 Tree Nuts',
+  'سمك': '🐟 Fish',
+  'قشريات': '🦐 Shellfish',
+  'جلوتين': '🍞 Gluten',
+  'صويا': '🌿 Soy',
+  'سمسم': '🌻 Sesame',
+  '🌾 قمح': '🌾 Wheat',
+  '🥛 حليب': '🥛 Milk',
+  '🥚 بيض': '🥚 Eggs',
+  '🥜 مكسرات': '🥜 Tree Nuts',
+  '🐟 سمك': '🐟 Fish',
+  '🦐 قشريات': '🦐 Shellfish',
+  '🍞 جلوتين': '🍞 Gluten',
+  '🌿 صويا': '🌿 Soy',
+  '🌻 سمسم': '🌻 Sesame',
+}
+
+const normalizeAllergenValue = (value) => {
+  if (!value) return ''
+  const trimmed = String(value).trim()
+  return allergenNormalizeMap[trimmed] || trimmed
+}
+
+const normalizeAllergens = (allergens) =>
+  Array.from(
+    new Set(
+      (Array.isArray(allergens) ? allergens : [allergens])
+        .map(normalizeAllergenValue)
+        .filter(Boolean)
+    )
+  )
+
+const normalizeSavedSections = (sections) =>
+  sections.map((section) => ({
+    ...section,
+    items: section.items.map((item) => ({
+      ...item,
+      visible: item.visible === false ? false : true,
+      allergens: normalizeAllergens(item.allergens),
+    })),
+  }))
+
+const addIds = (sections) =>
+  sections.map((section) => ({
+    ...section,
+    items: section.items.map((item, itemIndex) => ({
+      ...item,
+      id: `${section.title}-${itemIndex}-${item.name}`.replace(/\s+/g, '-'),
+      visible: item.visible === false ? false : true,
+      allergens: normalizeAllergens(item.allergens),
+    })),
+  }))
 
 function App() {
   const [showPopup, setShowPopup] = useState(true)
+  const [isAdmin, setIsAdmin] = useState(false)
+  const [showAdminLogin, setShowAdminLogin] = useState(false)
+  const [loginUsername, setLoginUsername] = useState('')
+  const [loginPassword, setLoginPassword] = useState('')
+  const [loginError, setLoginError] = useState('')
+  const [saveMessage, setSaveMessage] = useState('')
+  const [saveError, setSaveError] = useState('')
+  const [dragInfo, setDragInfo] = useState(null)
 
   useEffect(() => {
     const handleScroll = () => {
@@ -16,10 +93,22 @@ function App() {
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
-  const sections = [
-    {
-      title: 'BREAKFAST',
-      items: [
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape' && showAdminLogin) {
+        setShowAdminLogin(false)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [showAdminLogin])
+
+  const defaultSections = useMemo(
+    () => [
+      {
+        title: 'BREAKFAST',
+        items: [
         {
           name: 'Oriental Breakfast',
           description: 'Traditional Middle Eastern breakfast with hummus, falafel, and fresh pita bread.',
@@ -36,6 +125,8 @@ function App() {
           icons: ['☀️'],
           image: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=600&q=80',
         },
+
+        
         {
           name: 'Omelette',
           description: 'Fluffy omelette with cheese, vegetables, and your choice of fillings.',
@@ -127,7 +218,7 @@ function App() {
       title: 'SALADS',
       items: [
         {
-          name: 'Taboule',
+          name: 'Taboula',
           description: 'A refreshing blend of parsley, tomatoes, bulgur, and lemon dressing.',
           calories: '180 cal',
           price: '﷼ 40',
@@ -167,7 +258,7 @@ function App() {
           image: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=600&q=80',
         },
         {
-          name: 'Maxican Salad',
+          name: 'Mexican Salad',
           description: 'Spicy salad with corn, beans, avocado, and chili-lime dressing.',
           calories: '275 cal',
           price: '﷼ 50',
@@ -797,7 +888,169 @@ function App() {
         },
       ],
     },
-  ]
+    ],
+    []
+  )
+
+  const [sections, setSections] = useState(() => {
+    const saved = localStorage.getItem('menuData')
+    return saved ? normalizeSavedSections(JSON.parse(saved)) : addIds(defaultSections)
+  })
+
+  useEffect(() => {
+    localStorage.setItem('menuData', JSON.stringify(sections))
+  }, [sections])
+
+  const handleLogin = (event) => {
+    event.preventDefault()
+    if (loginUsername === 'admin' && loginPassword === '1234') {
+      setIsAdmin(true)
+      setShowAdminLogin(false)
+      setLoginError('')
+      return
+    }
+    setLoginError('Invalid username or password')
+  }
+
+  const handleLogout = () => {
+    setIsAdmin(false)
+    setLoginUsername('')
+    setLoginPassword('')
+    setLoginError('')
+    setSaveMessage('')
+    setSaveError('')
+  }
+
+  const canSave = sections.every((section) =>
+    section.items.every(
+      (item) =>
+        item.visible === false || (item.name?.trim().length > 0 && item.price?.trim().length > 0)
+    )
+  )
+
+  const handleSave = () => {
+    if (!canSave) {
+      setSaveError('Name and Price are required for all visible items')
+      setSaveMessage('')
+      return
+    }
+
+    localStorage.setItem('menuData', JSON.stringify(sections))
+    setSaveError('')
+    setSaveMessage('Changes saved successfully')
+    window.setTimeout(() => setSaveMessage(''), 2500)
+  }
+
+  const handleItemChange = (sectionTitle, itemId, field, value) => {
+    setSaveError('')
+    setSections((prevSections) =>
+      prevSections.map((section) => {
+        if (section.title !== sectionTitle) return section
+        return {
+          ...section,
+          items: section.items.map((item) =>
+            item.id !== itemId
+              ? item
+              : {
+                  ...item,
+                  [field]: value,
+                }
+          ),
+        }
+      })
+    )
+  }
+
+  const handleAllergenToggle = (sectionTitle, itemId, allergen) => {
+    setSaveError('')
+    setSections((prevSections) =>
+      prevSections.map((section) => {
+        if (section.title !== sectionTitle) return section
+        return {
+          ...section,
+          items: section.items.map((item) => {
+            if (item.id !== itemId) return item
+            const currentAllergens = item.allergens || []
+            const selected = currentAllergens.includes(allergen)
+            return {
+              ...item,
+              allergens: selected
+                ? currentAllergens.filter((value) => value !== allergen)
+                : [...currentAllergens, allergen],
+            }
+          }),
+        }
+      })
+    )
+  }
+
+  const handleImageUpload = (sectionTitle, itemId, file) => {
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = () => {
+      handleItemChange(sectionTitle, itemId, 'image', reader.result)
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const handleRemoveImage = (sectionTitle, itemId) => {
+    handleItemChange(sectionTitle, itemId, 'image', '')
+  }
+
+  const handleToggleVisible = (sectionTitle, itemId) => {
+    setSections((prevSections) =>
+      prevSections.map((section) => {
+        if (section.title !== sectionTitle) return section
+        return {
+          ...section,
+          items: section.items.map((item) =>
+            item.id !== itemId
+              ? item
+              : {
+                  ...item,
+                  visible: !item.visible,
+                }
+          ),
+        }
+      })
+    )
+  }
+
+  const handleDragStart = (event, sectionTitle, itemId) => {
+    event.dataTransfer.effectAllowed = 'move'
+    setDragInfo({ sectionTitle, itemId })
+  }
+
+  const handleDragOver = (event) => {
+    event.preventDefault()
+  }
+
+  const handleDrop = (event, sectionTitle, targetId) => {
+    event.preventDefault()
+    if (!dragInfo || dragInfo.sectionTitle !== sectionTitle) return
+    if (dragInfo.itemId === targetId) return
+
+    setSections((prevSections) =>
+      prevSections.map((section) => {
+        if (section.title !== sectionTitle) return section
+
+        const items = [...section.items]
+        const fromIndex = items.findIndex((item) => item.id === dragInfo.itemId)
+        const toIndex = items.findIndex((item) => item.id === targetId)
+
+        if (fromIndex === -1 || toIndex === -1) return section
+
+        const [movedItem] = items.splice(fromIndex, 1)
+        items.splice(toIndex, 0, movedItem)
+
+        return {
+          ...section,
+          items,
+        }
+      })
+    )
+    setDragInfo(null)
+  }
 
   return (
     <div className="page">
@@ -815,59 +1068,270 @@ function App() {
 
       <div className="topbar">
         <div className="search-placeholder">Search</div>
-
-        <button className="menu-icon" type="button">
-          <span></span>
-          <span></span>
-          <span></span>
-        </button>
+        <div className="topbar-actions">
+          {!isAdmin ? (
+            <button className="admin-link" type="button" onClick={() => setShowAdminLogin(true)}>
+              Admin
+            </button>
+          ) : (
+            <>
+              <button
+                className="admin-save-button"
+                type="button"
+                onClick={handleSave}
+                disabled={!canSave}
+              >
+                Save Changes
+              </button>
+              <button className="admin-link" type="button" onClick={handleLogout}>
+                Logout
+              </button>
+            </>
+          )}
+          <button className="menu-icon" type="button">
+            <span></span>
+            <span></span>
+            <span></span>
+          </button>
+        </div>
       </div>
 
-      <header className="hero">
-        <img src="/logo.png" alt="Sol Beach Resort" className="hero-image" />
-        <p className="subtitle">Sol Beach Kitchen</p>
-      </header>
-
-      {sections.map((section) => (
-        <section
-          className={`menu-section ${section.title === 'BEST SELLERS' ? 'best-sellers' : ''}`}
-          key={section.title}
-        >
-          <h2 className="section-title">{section.title}</h2>
-
-          <div className="menu-grid">
-            {section.items.map((item, index) => (
-              <article className="menu-card" key={item.name}>
-                <div className="menu-content">
-                  <h3>
-                    {item.name}
-                    {section.title === 'BEST SELLERS' && (
-                      <span className="badge">★ Best Seller</span>
-                    )}
-                  </h3>
-
-                  <p className="description">{item.description}</p>
-
-                  <div className="icons-row">
-                    {item.icons?.map((icon, iconIndex) => (
-                      <span key={iconIndex}>{icon}</span>
-                    ))}
-                  </div>
-
-                  <div className="meta">
-                    <span>{item.calories}</span>
-                    <span className="price">{item.price}</span>
-                  </div>
-                </div>
-
-                <div className="image-wrap">
-                  <img src={item.image} alt={item.name} />
-                </div>
-              </article>
-            ))}
+      {showAdminLogin && !isAdmin && (
+        <div className="admin-login-overlay">
+          <div className="admin-login-box">
+            <button className="admin-close" onClick={() => setShowAdminLogin(false)}>
+              ✕
+            </button>
+            <h2>Admin Login</h2>
+            <form className="admin-login-form" onSubmit={handleLogin}>
+              <label>
+                Username
+                <input
+                  type="text"
+                  value={loginUsername}
+                  onChange={(event) => setLoginUsername(event.target.value)}
+                  className="admin-input"
+                />
+              </label>
+              <label>
+                Password
+                <input
+                  type="password"
+                  value={loginPassword}
+                  onChange={(event) => setLoginPassword(event.target.value)}
+                  className="admin-input"
+                />
+              </label>
+              <button className="admin-button" type="submit">
+                Sign In
+              </button>
+            </form>
+            {loginError && <p className="admin-error">{loginError}</p>}
           </div>
-        </section>
-      ))}
+        </div>
+      )}
+
+      {isAdmin ? (
+        <>
+          <header className="hero admin-hero">
+            <img src="/logo.png" alt="Sol Beach Resort" className="hero-image" />
+            <p className="subtitle">Admin Dashboard</p>
+          </header>
+
+          <section className="admin-instructions">
+            <p>You can edit products here and reorder them within each section using drag and drop.</p>
+            {saveError && <p className="admin-save-error">{saveError}</p>}
+            {saveMessage && <p className="admin-save-feedback">{saveMessage}</p>}
+          </section>
+
+          {sections.map((section) => (
+            <section className="admin-section" key={section.title}>
+              <div className="admin-section-header">
+                <h2>{section.title}</h2>
+                <span>{section.items.length} items</span>
+              </div>
+              <div className="admin-grid">
+                {section.items.map((item) => (
+                  <div
+                    key={item.id}
+                    className={`admin-item ${item.visible === false ? 'hidden-item' : ''} ${dragInfo?.itemId === item.id ? 'dragging' : ''}`}
+                    onDragOver={handleDragOver}
+                    onDrop={(event) => handleDrop(event, section.title, item.id)}
+                  >
+                    <div className="admin-item-top">
+                      <div
+                        className="drag-handle"
+                        draggable
+                        onDragStart={(event) => handleDragStart(event, section.title, item.id)}
+                        onDragEnd={() => setDragInfo(null)}
+                      >
+                        ☰
+                      </div>
+                      <div className="admin-item-title">
+                        {item.name}
+                        {item.visible === false && <span className="hidden-badge">Hidden</span>}
+                      </div>
+                    </div>
+                    <label>
+                      Name
+                      <input
+                        className="admin-input"
+                        value={item.name}
+                        onChange={(event) =>
+                          handleItemChange(section.title, item.id, 'name', event.target.value)
+                        }
+                      />
+                    </label>
+                    <label>
+                      Description
+                      <textarea
+                        className="admin-textarea"
+                        value={item.description}
+                        onChange={(event) =>
+                          handleItemChange(section.title, item.id, 'description', event.target.value)
+                        }
+                      />
+                    </label>
+                    <label>
+                      Allergens
+                      <div className="admin-allergen-chips">
+                        {allergenOptions.map((option) => {
+                          const selected = item.allergens?.includes(option.value)
+                          return (
+                            <button
+                              type="button"
+                              key={option.value}
+                              className={`admin-allergen-chip ${selected ? 'selected' : ''}`}
+                              onClick={() => handleAllergenToggle(section.title, item.id, option.value)}
+                            >
+                              {option.value}
+                            </button>
+                          )
+                        })}
+                      </div>
+                      <span className="admin-allergen-help">Click a label to toggle allergens. You can select multiple.</span>
+                    </label>
+                    <div className="admin-image-actions">
+                      <label className="admin-upload-label">
+                        Upload PNG
+                        <input
+                          className="admin-file-input"
+                          type="file"
+                          accept="image/png, image/jpeg"
+                          onChange={(event) =>
+                            handleImageUpload(
+                              section.title,
+                              item.id,
+                              event.target.files?.[0]
+                            )
+                          }
+                        />
+                      </label>
+                      <button
+                        type="button"
+                        className="admin-remove-button"
+                        onClick={() => handleRemoveImage(section.title, item.id)}
+                      >
+                        Remove picture
+                      </button>
+                      <button
+                        type="button"
+                        className="admin-toggle-button"
+                        onClick={() => handleToggleVisible(section.title, item.id)}
+                      >
+                        {item.visible === false ? 'Show item' : 'Hide item'}
+                      </button>
+                    </div>
+                    <div className="admin-image-preview">
+                      {item.image ? (
+                        <img src={item.image} alt={item.name} />
+                      ) : (
+                        <div className="admin-image-placeholder">No image available</div>
+                      )}
+                    </div>
+                    <div className="admin-row">
+                      <label>
+                        Price
+                        <input
+                          className="admin-input"
+                          value={item.price}
+                          onChange={(event) =>
+                            handleItemChange(section.title, item.id, 'price', event.target.value)
+                          }
+                        />
+                      </label>
+                      <label>
+                        Calories
+                        <input
+                          className="admin-input"
+                          value={item.calories}
+                          onChange={(event) =>
+                            handleItemChange(section.title, item.id, 'calories', event.target.value)
+                          }
+                        />
+                      </label>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          ))}
+        </>
+      ) : (
+        <>
+          <header className="hero">
+            <img src="/logo.png" alt="Sol Beach Resort" className="hero-image" />
+            <p className="subtitle">Sol Beach Kitchen</p>
+          </header>
+
+          {sections.map((section) => (
+            <section
+              className={`menu-section ${section.title === 'BEST SELLERS' ? 'best-sellers' : ''}`}
+              key={section.title}
+            >
+              <h2 className="section-title">{section.title}</h2>
+
+              <div className="menu-grid">
+                {section.items
+                  .filter((item) => item.visible !== false)
+                  .map((item, index) => (
+                    <article className="menu-card" key={item.name}>
+                    <div className="menu-content">
+                      <h3>
+                        {item.name}
+                        {section.title === 'BEST SELLERS' && (
+                          <span className="badge">★ Best Seller</span>
+                        )}
+                      </h3>
+
+                      <p className="description">{item.description}</p>
+
+                      {item.allergens?.length > 0 && (
+                        <div className="allergen-row">
+                          {item.allergens.map((allergen, allergenIndex) => (
+                            <span key={allergenIndex} className="allergen-badge">
+                              {allergen}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+
+                      <div className="meta">
+                        <span>{item.calories}</span>
+                        <span className="price">{item.price}</span>
+                      </div>
+                    </div>
+
+                    <div className="image-wrap">
+                      <img src={item.image} alt={item.name} />
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </section>
+          ))}
+        </>
+      )}
 
       <footer className="footer">
         <p>© 2026 Sol Beach Resort. All rights reserved.</p>
