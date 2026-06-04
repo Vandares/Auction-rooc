@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import './App.css'
 import { defaultSections } from './seedMenuData.js'
-import { db, storage, isFirebaseConfigured } from './firebaseConfig'
+import { db, storage, isFirebaseConfigured, signInFirebaseAnon } from './firebaseConfig'
 import { doc, setDoc, onSnapshot, serverTimestamp } from 'firebase/firestore'
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage'
 
@@ -150,28 +150,43 @@ function App() {
   useEffect(() => {
     if (!isFirebaseConfigured) return
 
-    setLoading(true)
-    const menuDocRef = doc(db, 'menu', 'default')
-
-    const unsubscribe = onSnapshot(
-      menuDocRef,
-      (snapshot) => {
-        if (snapshot.exists()) {
-          const data = snapshot.data()
-          if (data?.sections) {
-            setSections(addIds(normalizeSavedSections(data.sections)))
-          }
-        }
-        setLoading(false)
-      },
-      (error) => {
-        console.error('Firebase realtime error', error)
-        setSaveError('Firebase sync error. Check console for details.')
-        setLoading(false)
+    const initFirebase = async () => {
+      try {
+        await signInFirebaseAnon()
+      } catch (error) {
+        console.error('Firebase anonymous sign-in failed', error)
       }
-    )
+      setLoading(true)
+      const menuDocRef = doc(db, 'menu', 'default')
 
-    return unsubscribe
+      const unsubscribe = onSnapshot(
+        menuDocRef,
+        (snapshot) => {
+          if (snapshot.exists()) {
+            const data = snapshot.data()
+            if (data?.sections) {
+              setSections(addIds(normalizeSavedSections(data.sections)))
+            }
+          }
+          setLoading(false)
+        },
+        (error) => {
+          console.error('Firebase realtime error', error)
+          setSaveError(`Firebase sync error: ${error.message || 'Check console for details.'}`)
+          setLoading(false)
+        }
+      )
+
+      return unsubscribe
+    }
+
+    const unsubscribePromise = initFirebase()
+
+    return () => {
+      unsubscribePromise.then((unsubscribe) => {
+        if (typeof unsubscribe === 'function') unsubscribe()
+      })
+    }
   }, [])
 
   const handleLogin = (event) => {
@@ -228,7 +243,7 @@ function App() {
         console.error('Firebase save failed', error)
         try {
           localStorage.setItem('menuData', JSON.stringify(sections))
-          setSaveError('Saved locally, but failed to sync shared menu.')
+          setSaveError(`Saved locally, but failed to sync shared menu: ${error.message || 'Unknown error.'}`)
           setSaveMessage('Changes saved locally')
           window.setTimeout(() => setSaveMessage(''), 2500)
         } catch (storageError) {
