@@ -115,7 +115,7 @@ function App() {
           calories: '480 cal',
           price: '﷼ 75',
           icons: ['☀️'],
-          image: 'https://images.unsplash.com/photo-1515003197210-e0cd71810b5f?auto=format&fit=crop&w=600&q=80',
+          
         },
         {
           name: 'American Breakfast',
