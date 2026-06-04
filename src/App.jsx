@@ -312,6 +312,14 @@ function App() {
   const handleImageUpload = async (sectionTitle, itemId, file) => {
     if (!file) return
 
+    const previewFile = () => {
+      const reader = new FileReader()
+      reader.onload = () => {
+        handleItemChange(sectionTitle, itemId, 'image', reader.result)
+      }
+      reader.readAsDataURL(file)
+    }
+
     if (isFirebaseConfigured) {
       try {
         const fileName = file.name.replace(/\s+/g, '-')
@@ -323,16 +331,13 @@ function App() {
         return
       } catch (error) {
         console.error('Firebase image upload failed', error)
-        setSaveError('Image upload failed. Please try again.')
+        setSaveError('Image upload failed. Showing local preview instead.')
+        previewFile()
         return
       }
     }
 
-    const reader = new FileReader()
-    reader.onload = () => {
-      handleItemChange(sectionTitle, itemId, 'image', reader.result)
-    }
-    reader.readAsDataURL(file)
+    previewFile()
   }
 
   const handleRemoveImage = (sectionTitle, itemId) => {
