@@ -1033,6 +1033,20 @@ body {
     width: 100%;
   }
 
+  .admin-image-actions button,
+  .admin-upload-label,
+  .admin-remove-button,
+  .admin-toggle-button {
+    padding: 8px 12px;
+    font-size: 14px;
+    min-height: 38px;
+  }
+
+  .admin-remove-button,
+  .admin-toggle-button {
+    border-radius: 12px;
+  }
+
   .admin-image-preview {
     max-height: none;
     min-height: 140px;
