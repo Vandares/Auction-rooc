@@ -634,18 +634,13 @@ function App() {
                       <span className="admin-allergen-help">Click a label to toggle allergens. You can select multiple.</span>
                     </label>
                     <div className="admin-image-actions">
-                      <label className="admin-upload-label">
-                        Upload PNG
+                      <label>
+                        Image URL
                         <input
-                          className="admin-file-input"
-                          type="file"
-                          accept="image/png, image/jpeg"
+                          className="admin-input"
+                          value={item.image || ''}
                           onChange={(event) =>
-                            handleImageUpload(
-                              section.title,
-                              item.id,
-                              event.target.files?.[0]
-                            )
+                            handleItemChange(section.title, item.id, 'image', event.target.value)
                           }
                         />
                       </label>
