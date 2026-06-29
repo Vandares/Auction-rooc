@@ -1,6 +1,6 @@
 import 'dotenv/config'
 import { initializeApp } from 'firebase/app'
-import { getFirestore, collection, doc, getDocs, writeBatch, setDoc } from 'firebase/firestore'
+import { getFirestore, doc, setDoc, serverTimestamp } from 'firebase/firestore'
 import { defaultSections } from './src/seedMenuData.js'
 
 const firebaseConfig = {
@@ -14,52 +14,35 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig)
 const db = getFirestore(app)
-const menuItemsCollection = collection(db, 'menuItems')
 
-const sanitizeId = (value) =>
-  String(value)
-    .toLowerCase()
-    .replace(/\s+/g, '-')
-    .replace(/[^a-z0-9-_]/g, '')
-    .replace(/-+/g, '-')
-    .replace(/^-|-$/g, '')
-
-const itemsToSeed = defaultSections.flatMap((section, sectionIndex) =>
-  (section.items || []).map((item, itemIndex) => ({
-    ...item,
-    sectionTitle: section.title,
-    sectionOrder: sectionIndex,
-    itemOrder: itemIndex,
+const normalizeSections = (sections) =>
+  sections.map((section) => ({
+    ...section,
+    items: (section.items || []).map((item) => ({
+      name: item.name || 'New item',
+      description: item.description || '',
+      calories: item.calories || '',
+      price: item.price || '',
+      icons: item.icons || [],
+      image: item.image || '',
+      visible: item.visible === false ? false : true,
+      allergens: item.allergens || [],
+    })),
   }))
-)
-
-const clearExistingCollection = async () => {
-  const snapshot = await getDocs(menuItemsCollection)
-  if (snapshot.empty) return
-
-  const batch = writeBatch(db)
-  snapshot.docs.forEach((docSnapshot) => {
-    batch.delete(docSnapshot.ref)
-  })
-  await batch.commit()
-}
 
 const run = async () => {
-  if (itemsToSeed.length === 0) {
-    console.log('No menu items found in seed data. Nothing to upload.')
-    return
-  }
+  const menuDocRef = doc(db, 'menu', 'default')
 
-  console.log(`Seeding ${itemsToSeed.length} menu item(s) to Firestore collection 'menuItems'...`)
-  await clearExistingCollection()
+  await setDoc(
+    menuDocRef,
+    {
+      sections: normalizeSections(defaultSections),
+      updatedAt: serverTimestamp(),
+    },
+    { merge: true }
+  )
 
-  for (const item of itemsToSeed) {
-    const itemId = sanitizeId(`${item.sectionTitle}-${item.itemOrder}-${item.name || 'item'}`)
-    const itemRef = doc(menuItemsCollection, itemId)
-    await setDoc(itemRef, item)
-  }
-
-  console.log('Seed complete.')
+  console.log('Menu sections uploaded to Firestore: menu/default')
 }
 
 run().catch((error) => {
