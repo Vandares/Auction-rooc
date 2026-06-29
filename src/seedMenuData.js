@@ -6,7 +6,7 @@ export const defaultSections = [
   { title: 'BURGERS', items: [] },
   { title: 'MAIN COURSES', items: [] },
   { title: 'PASTA & PIZZA', items: [] },
-   { title: 'SIDES', items: [] },
+  { title: 'SIDES', items: [] },
   { title: 'DESSERTS', items: [] },
   { title: 'HOT DRINKS', items: [] },
   { title: 'COLD DRINKS', items: [] },
