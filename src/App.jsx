@@ -20,15 +20,15 @@ const allergenOptions = [
 ]
 
 const allergenNormalizeMap = {
-  'قمح': '🌾 Wheat',
-  'حليب': '🥛 Milk',
-  'بيض': '🥚 Eggs',
-  'مكسرات': '🥜 Tree Nuts',
-  'سمك': '🐟 Fish',
-  'قشريات': '🦐 Shellfish',
-  'جلوتين': '🍞 Gluten',
-  'صويا': '🌿 Soy',
-  'سمسم': '🌻 Sesame',
+  قمح: '🌾 Wheat',
+  حليب: '🥛 Milk',
+  بيض: '🥚 Eggs',
+  مكسرات: '🥜 Tree Nuts',
+  سمك: '🐟 Fish',
+  قشريات: '🦐 Shellfish',
+  جلوتين: '🍞 Gluten',
+  صويا: '🌿 Soy',
+  سمسم: '🌻 Sesame',
   '🌾 قمح': '🌾 Wheat',
   '🥛 حليب': '🥛 Milk',
   '🥚 بيض': '🥚 Eggs',
@@ -58,7 +58,7 @@ const normalizeAllergens = (allergens) =>
 const normalizeSavedSections = (sections) =>
   sections.map((section) => ({
     ...section,
-    items: section.items.map((item) => ({
+    items: (section.items || []).map((item) => ({
       ...item,
       visible: item.visible === false ? false : true,
       allergens: normalizeAllergens(item.allergens),
@@ -68,7 +68,7 @@ const normalizeSavedSections = (sections) =>
 const addIds = (sections) =>
   sections.map((section) => ({
     ...section,
-    items: section.items.map((item, itemIndex) => ({
+    items: (section.items || []).map((item, itemIndex) => ({
       ...item,
       id: `${section.title}-${itemIndex}-${item.name}`.replace(/\s+/g, '-'),
       visible: item.visible === false ? false : true,
@@ -79,6 +79,7 @@ const addIds = (sections) =>
 const loadSections = () => {
   const saved = localStorage.getItem('menuData')
   if (!saved) return addIds(defaultSections)
+
   try {
     return addIds(normalizeSavedSections(JSON.parse(saved)))
   } catch (error) {
@@ -99,7 +100,10 @@ function App() {
   const [saveError, setSaveError] = useState('')
   const [dragInfo, setDragInfo] = useState(null)
   const [itemToRemove, setItemToRemove] = useState(null)
+  const [sectionToRemove, setSectionToRemove] = useState(null)
+  const [newSectionTitle, setNewSectionTitle] = useState('')
   const [loading, setLoading] = useState(false)
+  const [sections, setSections] = useState(() => loadSections())
 
   useEffect(() => {
     const handleScroll = () => {
@@ -124,8 +128,6 @@ function App() {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [showAdminLogin])
 
-  const [sections, setSections] = useState(() => loadSections())
-
   useEffect(() => {
     try {
       localStorage.setItem('menuData', JSON.stringify(sections))
@@ -138,6 +140,7 @@ function App() {
   useEffect(() => {
     const handleStorage = (event) => {
       if (event.key !== 'menuData' || !event.newValue) return
+
       try {
         setSections(addIds(normalizeSavedSections(JSON.parse(event.newValue))))
       } catch (error) {
@@ -158,6 +161,7 @@ function App() {
       } catch (error) {
         console.error('Firebase anonymous sign-in failed', error)
       }
+
       setLoading(true)
       const menuDocRef = doc(db, 'menu', 'default')
 
@@ -193,12 +197,14 @@ function App() {
 
   const handleLogin = (event) => {
     event.preventDefault()
+
     if (loginUsername === 'admin' && loginPassword === '1234') {
       setIsAdmin(true)
       setShowAdminLogin(false)
       setLoginError('')
       return
     }
+
     setLoginError('Invalid username or password')
   }
 
@@ -228,6 +234,7 @@ function App() {
     if (isFirebaseConfigured) {
       try {
         const menuDocRef = doc(db, 'menu', 'default')
+
         await setDoc(
           menuDocRef,
           {
@@ -236,6 +243,7 @@ function App() {
           },
           { merge: true }
         )
+
         localStorage.setItem('menuData', JSON.stringify(sections))
         setSaveError('')
         setSaveMessage('Changes saved for everyone')
@@ -243,9 +251,14 @@ function App() {
         return
       } catch (error) {
         console.error('Firebase save failed', error)
+
         try {
           localStorage.setItem('menuData', JSON.stringify(sections))
-          setSaveError(`Saved locally, but failed to sync shared menu: ${error.message || 'Unknown error.'}`)
+          setSaveError(
+            `Saved locally, but failed to sync shared menu: ${
+              error.message || 'Unknown error.'
+            }`
+          )
           setSaveMessage('Changes saved locally')
           window.setTimeout(() => setSaveMessage(''), 2500)
         } catch (storageError) {
@@ -253,6 +266,7 @@ function App() {
           setSaveError('Failed to save menu data. Please try again.')
           setSaveMessage('')
         }
+
         return
       }
     }
@@ -270,9 +284,11 @@ function App() {
 
   const handleItemChange = (sectionTitle, itemId, field, value) => {
     setSaveError('')
+
     setSections((prevSections) =>
       prevSections.map((section) => {
         if (section.title !== sectionTitle) return section
+
         return {
           ...section,
           items: section.items.map((item) =>
@@ -290,15 +306,19 @@ function App() {
 
   const handleAllergenToggle = (sectionTitle, itemId, allergen) => {
     setSaveError('')
+
     setSections((prevSections) =>
       prevSections.map((section) => {
         if (section.title !== sectionTitle) return section
+
         return {
           ...section,
           items: section.items.map((item) => {
             if (item.id !== itemId) return item
+
             const currentAllergens = item.allergens || []
             const selected = currentAllergens.includes(allergen)
+
             return {
               ...item,
               allergens: selected
@@ -316,19 +336,25 @@ function App() {
 
     const previewFile = () => {
       const reader = new FileReader()
+
       reader.onload = () => {
         handleItemChange(sectionTitle, itemId, 'image', reader.result)
       }
+
       reader.readAsDataURL(file)
     }
 
     if (isFirebaseConfigured) {
       try {
         const fileName = file.name.replace(/\s+/g, '-')
-        const storagePath = `menu-images/${sectionTitle.replace(/\s+/g, '-')}/${itemId}-${Date.now()}-${fileName}`
+        const storagePath = `menu-images/${sectionTitle.replace(
+          /\s+/g,
+          '-'
+        )}/${itemId}-${Date.now()}-${fileName}`
         const uploadRef = storageRef(storage, storagePath)
         const snapshot = await uploadBytes(uploadRef, file)
         const imageUrl = await getDownloadURL(snapshot.ref)
+
         handleItemChange(sectionTitle, itemId, 'image', imageUrl)
         return
       } catch (error) {
@@ -350,6 +376,7 @@ function App() {
     setSections((prevSections) =>
       prevSections.map((section) => {
         if (section.title !== sectionTitle) return section
+
         return {
           ...section,
           items: section.items.map((item) =>
@@ -371,16 +398,20 @@ function App() {
 
   const handleConfirmRemoveItem = () => {
     if (!itemToRemove) return
+
     const { sectionTitle, itemId } = itemToRemove
+
     setSections((prevSections) =>
       prevSections.map((section) => {
         if (section.title !== sectionTitle) return section
+
         return {
           ...section,
           items: section.items.filter((item) => item.id !== itemId),
         }
       })
     )
+
     setItemToRemove(null)
   }
 
@@ -413,6 +444,60 @@ function App() {
     )
   }
 
+  const handleAddSection = () => {
+    const title = newSectionTitle.trim().toUpperCase()
+
+    if (!title) {
+      setSaveError('Section name is required')
+      setSaveMessage('')
+      return
+    }
+
+    const sectionExists = sections.some(
+      (section) => section.title.toLowerCase() === title.toLowerCase()
+    )
+
+    if (sectionExists) {
+      setSaveError('This section already exists')
+      setSaveMessage('')
+      return
+    }
+
+    setSections((prevSections) => [
+      ...prevSections,
+      {
+        title,
+        items: [],
+      },
+    ])
+
+    setNewSectionTitle('')
+    setSaveError('')
+    setSaveMessage('Section added. Click Save Changes to publish it.')
+    window.setTimeout(() => setSaveMessage(''), 2500)
+  }
+
+  const handleRequestRemoveSection = (sectionTitle) => {
+    setSectionToRemove(sectionTitle)
+  }
+
+  const handleCancelRemoveSection = () => {
+    setSectionToRemove(null)
+  }
+
+  const handleConfirmRemoveSection = () => {
+    if (!sectionToRemove) return
+
+    setSections((prevSections) =>
+      prevSections.filter((section) => section.title !== sectionToRemove)
+    )
+
+    setSectionToRemove(null)
+    setSaveError('')
+    setSaveMessage('Section removed. Click Save Changes to publish it.')
+    window.setTimeout(() => setSaveMessage(''), 2500)
+  }
+
   const handleDragStart = (event, sectionTitle, itemId) => {
     event.dataTransfer.effectAllowed = 'move'
     setDragInfo({ sectionTitle, itemId })
@@ -424,6 +509,7 @@ function App() {
 
   const handleDrop = (event, sectionTitle, targetId) => {
     event.preventDefault()
+
     if (!dragInfo || dragInfo.sectionTitle !== sectionTitle) return
     if (dragInfo.itemId === targetId) return
 
@@ -446,6 +532,7 @@ function App() {
         }
       })
     )
+
     setDragInfo(null)
   }
 
@@ -465,6 +552,7 @@ function App() {
 
       <div className="topbar">
         <div className="search-placeholder">Search</div>
+
         <div className="topbar-actions">
           {!isAdmin ? (
             <button className="admin-link" type="button" onClick={() => setShowAdminLogin(true)}>
@@ -480,11 +568,13 @@ function App() {
               >
                 Save Changes
               </button>
+
               <button className="admin-link" type="button" onClick={handleLogout}>
                 Logout
               </button>
             </>
           )}
+
           <button className="menu-icon" type="button">
             <span></span>
             <span></span>
@@ -499,7 +589,9 @@ function App() {
             <button className="admin-close" onClick={() => setShowAdminLogin(false)}>
               ✕
             </button>
+
             <h2>Admin Login</h2>
+
             <form className="admin-login-form" onSubmit={handleLogin}>
               <label>
                 Username
@@ -510,6 +602,7 @@ function App() {
                   className="admin-input"
                 />
               </label>
+
               <label>
                 Password
                 <input
@@ -519,10 +612,12 @@ function App() {
                   className="admin-input"
                 />
               </label>
+
               <button className="admin-button" type="submit">
                 Sign In
               </button>
             </form>
+
             {loginError && <p className="admin-error">{loginError}</p>}
           </div>
         </div>
@@ -534,14 +629,51 @@ function App() {
             <button className="confirm-close" type="button" onClick={handleCancelRemoveItem}>
               ✕
             </button>
+
             <h2>Confirm removal</h2>
             <p>Are you sure you want to remove this item? This action cannot be undone.</p>
+
             <div className="confirm-actions">
               <button className="confirm-button cancel" type="button" onClick={handleCancelRemoveItem}>
                 Cancel
               </button>
+
               <button className="confirm-button danger" type="button" onClick={handleConfirmRemoveItem}>
                 Remove
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {sectionToRemove && (
+        <div className="confirm-overlay">
+          <div className="confirm-box">
+            <button className="confirm-close" type="button" onClick={handleCancelRemoveSection}>
+              ✕
+            </button>
+
+            <h2>Confirm section removal</h2>
+            <p>
+              Are you sure you want to remove the section "{sectionToRemove}"?
+              All items inside it will be removed.
+            </p>
+
+            <div className="confirm-actions">
+              <button
+                className="confirm-button cancel"
+                type="button"
+                onClick={handleCancelRemoveSection}
+              >
+                Cancel
+              </button>
+
+              <button
+                className="confirm-button danger"
+                type="button"
+                onClick={handleConfirmRemoveSection}
+              >
+                Remove Section
               </button>
             </div>
           </div>
@@ -557,6 +689,22 @@ function App() {
 
           <section className="admin-instructions">
             <p>You can edit products here and reorder them within each section using drag and drop.</p>
+
+            <div className="admin-add-section-box">
+              <input
+                className="admin-input"
+                type="text"
+                placeholder="New section name"
+                value={newSectionTitle}
+                onChange={(event) => setNewSectionTitle(event.target.value)}
+              />
+
+              <button className="admin-button" type="button" onClick={handleAddSection}>
+                + Add Section
+              </button>
+            </div>
+
+            {loading && <p className="admin-save-feedback">Loading menu...</p>}
             {saveError && <p className="admin-save-error">{saveError}</p>}
             {saveMessage && <p className="admin-save-feedback">{saveMessage}</p>}
           </section>
@@ -564,14 +712,27 @@ function App() {
           {sections.map((section) => (
             <section className="admin-section" key={section.title}>
               <div className="admin-section-header">
-                <h2>{section.title}</h2>
-                <span>{section.items.length} items</span>
+                <div>
+                  <h2>{section.title}</h2>
+                  <span>{section.items.length} items</span>
+                </div>
+
+                <button
+                  type="button"
+                  className="admin-remove-section-button"
+                  onClick={() => handleRequestRemoveSection(section.title)}
+                >
+                  Remove Section
+                </button>
               </div>
+
               <div className="admin-grid">
                 {section.items.map((item) => (
                   <div
                     key={item.id}
-                    className={`admin-item ${item.visible === false ? 'hidden-item' : ''} ${dragInfo?.itemId === item.id ? 'dragging' : ''}`}
+                    className={`admin-item ${item.visible === false ? 'hidden-item' : ''} ${
+                      dragInfo?.itemId === item.id ? 'dragging' : ''
+                    }`}
                     onDragOver={handleDragOver}
                     onDrop={(event) => handleDrop(event, section.title, item.id)}
                   >
@@ -584,10 +745,12 @@ function App() {
                       >
                         ☰
                       </div>
+
                       <div className="admin-item-title">
                         {item.name}
                         {item.visible === false && <span className="hidden-badge">Hidden</span>}
                       </div>
+
                       <button
                         type="button"
                         className="admin-remove-item-button"
@@ -596,6 +759,7 @@ function App() {
                         ✕
                       </button>
                     </div>
+
                     <label>
                       Name
                       <input
@@ -606,6 +770,7 @@ function App() {
                         }
                       />
                     </label>
+
                     <label>
                       Description
                       <textarea
@@ -616,11 +781,13 @@ function App() {
                         }
                       />
                     </label>
+
                     <label>
                       Allergens
                       <div className="admin-allergen-chips">
                         {allergenOptions.map((option) => {
                           const selected = item.allergens?.includes(option.value)
+
                           return (
                             <button
                               type="button"
@@ -633,8 +800,12 @@ function App() {
                           )
                         })}
                       </div>
-                      <span className="admin-allergen-help">Click a label to toggle allergens. You can select multiple.</span>
+
+                      <span className="admin-allergen-help">
+                        Click a label to toggle allergens. You can select multiple.
+                      </span>
                     </label>
+
                     <div className="admin-image-actions">
                       <label>
                         Image URL
@@ -646,6 +817,18 @@ function App() {
                           }
                         />
                       </label>
+
+                      <label className="admin-upload-label">
+                        Upload picture
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(event) =>
+                            handleImageUpload(section.title, item.id, event.target.files?.[0])
+                          }
+                        />
+                      </label>
+
                       <button
                         type="button"
                         className="admin-remove-button"
@@ -653,6 +836,7 @@ function App() {
                       >
                         Remove picture
                       </button>
+
                       <button
                         type="button"
                         className="admin-toggle-button"
@@ -661,6 +845,7 @@ function App() {
                         {item.visible === false ? 'Show item' : 'Hide item'}
                       </button>
                     </div>
+
                     <div className="admin-image-preview">
                       {item.image ? (
                         <img src={item.image} alt={item.name} />
@@ -668,6 +853,7 @@ function App() {
                         <div className="admin-image-placeholder">No image available</div>
                       )}
                     </div>
+
                     <div className="admin-row">
                       <label>
                         Price
@@ -679,6 +865,7 @@ function App() {
                           }
                         />
                       </label>
+
                       <label>
                         Calories
                         <input
@@ -693,6 +880,7 @@ function App() {
                   </div>
                 ))}
               </div>
+
               <div className="admin-add-item-row">
                 <button
                   type="button"
@@ -722,39 +910,39 @@ function App() {
               <div className="menu-grid">
                 {section.items
                   .filter((item) => item.visible !== false)
-                  .map((item, index) => (
-                    <article className="menu-card" key={item.name}>
-                    <div className="menu-content">
-                      <h3>
-                        {item.name}
-                        {section.title === 'BEST SELLERS' && (
-                          <span className="badge">★ Best Seller</span>
+                  .map((item) => (
+                    <article className="menu-card" key={item.id || item.name}>
+                      <div className="menu-content">
+                        <h3>
+                          {item.name}
+                          {section.title === 'BEST SELLERS' && (
+                            <span className="badge">★ Best Seller</span>
+                          )}
+                        </h3>
+
+                        <p className="description">{item.description}</p>
+
+                        {item.allergens?.length > 0 && (
+                          <div className="allergen-row">
+                            {item.allergens.map((allergen, allergenIndex) => (
+                              <span key={allergenIndex} className="allergen-badge">
+                                {allergen}
+                              </span>
+                            ))}
+                          </div>
                         )}
-                      </h3>
 
-                      <p className="description">{item.description}</p>
-
-                      {item.allergens?.length > 0 && (
-                        <div className="allergen-row">
-                          {item.allergens.map((allergen, allergenIndex) => (
-                            <span key={allergenIndex} className="allergen-badge">
-                              {allergen}
-                            </span>
-                          ))}
+                        <div className="meta">
+                          <span>{item.calories}</span>
+                          <span className="price">{item.price}</span>
                         </div>
-                      )}
-
-                      <div className="meta">
-                        <span>{item.calories}</span>
-                        <span className="price">{item.price}</span>
                       </div>
-                    </div>
 
-                    <div className="image-wrap">
-                      <img src={item.image} alt={item.name} />
-                    </div>
-                  </article>
-                ))}
+                      <div className="image-wrap">
+                        {item.image ? <img src={item.image} alt={item.name} /> : null}
+                      </div>
+                    </article>
+                  ))}
               </div>
             </section>
           ))}
