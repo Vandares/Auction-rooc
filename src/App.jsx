@@ -70,7 +70,7 @@ const addIds = (sections) =>
     ...section,
     items: (section.items || []).map((item, itemIndex) => ({
       ...item,
-      id: `${section.title}-${itemIndex}-${item.name}`.replace(/\s+/g, '-'),
+      id: item.id || `${section.title}-${itemIndex}-${item.name}`.replace(/\s+/g, '-'),
       visible: item.visible === false ? false : true,
       allergens: normalizeAllergens(item.allergens),
     })),
@@ -477,6 +477,26 @@ function App() {
     window.setTimeout(() => setSaveMessage(''), 2500)
   }
 
+  const handleMoveSection = (sectionIndex, direction) => {
+    setSections((prevSections) => {
+      const newSections = [...prevSections]
+      const targetIndex = direction === 'up' ? sectionIndex - 1 : sectionIndex + 1
+
+      if (targetIndex < 0 || targetIndex >= newSections.length) {
+        return prevSections
+      }
+
+      const [movedSection] = newSections.splice(sectionIndex, 1)
+      newSections.splice(targetIndex, 0, movedSection)
+
+      return newSections
+    })
+
+    setSaveError('')
+    setSaveMessage('Section order changed. Click Save Changes to publish it.')
+    window.setTimeout(() => setSaveMessage(''), 2500)
+  }
+
   const handleRequestRemoveSection = (sectionTitle) => {
     setSectionToRemove(sectionTitle)
   }
@@ -709,7 +729,7 @@ function App() {
             {saveMessage && <p className="admin-save-feedback">{saveMessage}</p>}
           </section>
 
-          {sections.map((section) => (
+          {sections.map((section, sectionIndex) => (
             <section className="admin-section" key={section.title}>
               <div className="admin-section-header">
                 <div>
@@ -717,13 +737,33 @@ function App() {
                   <span>{section.items.length} items</span>
                 </div>
 
-                <button
-                  type="button"
-                  className="admin-remove-section-button"
-                  onClick={() => handleRequestRemoveSection(section.title)}
-                >
-                  Remove Section
-                </button>
+                <div className="admin-section-actions">
+                  <button
+                    type="button"
+                    className="admin-move-section-button"
+                    onClick={() => handleMoveSection(sectionIndex, 'up')}
+                    disabled={sectionIndex === 0}
+                  >
+                    ↑ Move Up
+                  </button>
+
+                  <button
+                    type="button"
+                    className="admin-move-section-button"
+                    onClick={() => handleMoveSection(sectionIndex, 'down')}
+                    disabled={sectionIndex === sections.length - 1}
+                  >
+                    ↓ Move Down
+                  </button>
+
+                  <button
+                    type="button"
+                    className="admin-remove-section-button"
+                    onClick={() => handleRequestRemoveSection(section.title)}
+                  >
+                    Remove Section
+                  </button>
+                </div>
               </div>
 
               <div className="admin-grid">

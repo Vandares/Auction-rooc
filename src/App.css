@@ -1137,3 +1137,106 @@ body {
   }
 }
 
+
+.admin-add-section-box {
+  width: min(720px, calc(100% - 32px));
+  margin: 20px auto 0;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.admin-add-section-box .admin-input {
+  flex: 1;
+}
+
+.admin-section-header {
+  gap: 16px;
+}
+
+.admin-section-header > div:first-child {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.admin-section-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.admin-move-section-button {
+  border: 1px solid rgba(0, 0, 0, 0.18);
+  background: #fff;
+  color: #111;
+  border-radius: 999px;
+  padding: 10px 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.admin-move-section-button:hover:not(:disabled) {
+  background: #111;
+  color: #fff;
+}
+
+.admin-move-section-button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.admin-remove-section-button {
+  border: 1px solid #d44;
+  background: transparent;
+  color: #d44;
+  border-radius: 999px;
+  padding: 10px 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.admin-remove-section-button:hover {
+  background: #d44;
+  color: #fff;
+}
+
+.admin-upload-label {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 8px;
+  font-weight: 700;
+}
+
+.admin-upload-label input {
+  font-size: 13px;
+}
+
+@media (max-width: 640px) {
+  .admin-add-section-box {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .admin-add-section-box .admin-button {
+    width: 100%;
+  }
+
+  .admin-section-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .admin-section-actions {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .admin-move-section-button,
+  .admin-remove-section-button {
+    width: 100%;
+  }
+}
+
