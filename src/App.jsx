@@ -15,7 +15,8 @@ const allergenOptions = [
   { value: '🍞 Gluten', label: 'Gluten' },
   { value: '🌿 Soy', label: 'Soy' },
   { value: '🌻 Sesame', label: 'Sesame' },
-  { value: '🌻 test', label: 'test' },
+  { value: '🥜 Peanuts', label: 'Peanuts' },
+  { value: '🫘 Legumes', label: 'Legumes' },
 ]
 
 const allergenNormalizeMap = {
