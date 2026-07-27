@@ -143,15 +143,28 @@ function App() {
   }
 
   useEffect(() => {
+    // Coalesce scroll events into one write per frame; the raw event fires far
+    // more often than the screen can repaint.
+    let frame = 0
+
     const handleScroll = () => {
-      const logo = document.querySelector('.hero-image')
-      if (logo) {
-        logo.style.transform = `rotate(${window.scrollY * 0.2}deg)`
-      }
+      if (frame) return
+
+      frame = window.requestAnimationFrame(() => {
+        frame = 0
+        const logo = document.querySelector('.hero-image')
+        if (logo) {
+          logo.style.transform = `rotate(${window.scrollY * 0.2}deg)`
+        }
+      })
     }
 
-    window.addEventListener('scroll', handleScroll)
-    return () => window.removeEventListener('scroll', handleScroll)
+    window.addEventListener('scroll', handleScroll, { passive: true })
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll)
+      if (frame) window.cancelAnimationFrame(frame)
+    }
   }, [])
 
   useEffect(() => {
@@ -166,12 +179,43 @@ function App() {
   }, [showAdminLogin])
 
   useEffect(() => {
-    try {
-      localStorage.setItem('menuData', JSON.stringify(sections))
-    } catch (error) {
-      console.error('Failed to persist menu data', error)
-      setSaveError('Unable to save changes locally. The uploaded image may be too large.')
-    }
+    // This is only a local cache -- Firestore is the source of truth once it is
+    // configured, so a failure here must never touch the menu held in state.
+    // Debounced so typing in the admin form doesn't re-serialise on every key.
+    const timer = window.setTimeout(() => {
+      try {
+        localStorage.setItem('menuData', JSON.stringify(sections))
+        return
+      } catch (error) {
+        console.error('Failed to cache menu data', error)
+      }
+
+      // The quota is almost always blown by inline base64 previews left behind
+      // by a failed upload. Drop just those from the cached copy so the rest of
+      // the menu still survives a reload.
+      try {
+        const withoutInlineImages = sections.map((section) => ({
+          ...section,
+          items: (section.items || []).map((item) =>
+            typeof item.image === 'string' && item.image.startsWith('data:')
+              ? { ...item, image: '' }
+              : item
+          ),
+        }))
+
+        localStorage.setItem('menuData', JSON.stringify(withoutInlineImages))
+        setSaveError(
+          'This browser ran out of local storage, so uploaded image previews were not cached. Your menu is safe -- click Save Changes to publish it.'
+        )
+      } catch (error) {
+        console.error('Failed to cache menu data without inline images', error)
+        setSaveError(
+          'Unable to cache the menu in this browser. Your changes are still on screen -- click Save Changes to publish them.'
+        )
+      }
+    }, 400)
+
+    return () => window.clearTimeout(timer)
   }, [sections])
 
   useEffect(() => {

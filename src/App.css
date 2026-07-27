@@ -371,10 +371,12 @@ body {
 .popup-close {
   position: absolute;
   top: 10px;
-  left: 10px;
+  inset-inline-end: 10px;
   border: none;
   background: transparent;
   font-size: 18px;
+  line-height: 1;
+  padding: 6px;
   cursor: pointer;
 }
 
