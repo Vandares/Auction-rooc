@@ -76,6 +76,20 @@ const addIds = (sections) =>
     })),
   }))
 
+const slugify = (title) =>
+  String(title || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+
+const toLabel = (title) =>
+  String(title || '')
+    .toLowerCase()
+    .split(' ')
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ')
+
 const loadSections = () => {
   const saved = localStorage.getItem('menuData')
   if (!saved) return addIds(defaultSections)
@@ -104,6 +118,29 @@ function App() {
   const [newSectionTitle, setNewSectionTitle] = useState('')
   const [loading, setLoading] = useState(false)
   const [sections, setSections] = useState(() => loadSections())
+
+  // Chips are built from the live menu, so a section only gets one once it has
+  // something a customer can actually see.
+  const navSections = sections
+    .map((section) => {
+      const visibleItems = (section.items || []).filter((item) => item.visible !== false)
+
+      return {
+        title: section.title,
+        id: slugify(section.title),
+        count: visibleItems.length,
+        image: visibleItems.find((item) => item.image)?.image || '',
+      }
+    })
+    .filter((section) => section.id && section.count > 0)
+
+  const scrollToSection = (id) => {
+    const target = document.getElementById(id)
+    if (!target) return
+
+    const top = target.getBoundingClientRect().top + window.scrollY - 70
+    window.scrollTo({ top, behavior: 'smooth' })
+  }
 
   useEffect(() => {
     const handleScroll = () => {
@@ -940,10 +977,38 @@ function App() {
             <p className="subtitle">Sol Beach Kitchen</p>
           </header>
 
+          {navSections.length > 0 && (
+            <nav className="category-nav" aria-label="Menu sections">
+              <div className="category-scroll">
+                {navSections.map((section) => (
+                  <button
+                    className="category-chip"
+                    type="button"
+                    key={section.id}
+                    onClick={() => scrollToSection(section.id)}
+                  >
+                    <span className="category-thumb">
+                      {section.image ? (
+                        <img src={section.image} alt="" loading="lazy" />
+                      ) : (
+                        <span className="category-thumb-fallback" aria-hidden="true">
+                          {toLabel(section.title).charAt(0)}
+                        </span>
+                      )}
+                    </span>
+
+                    <span className="category-label">{toLabel(section.title)}</span>
+                  </button>
+                ))}
+              </div>
+            </nav>
+          )}
+
           {sections.map((section) => (
             <section
               className={`menu-section ${section.title === 'BEST SELLERS' ? 'best-sellers' : ''}`}
               key={section.title}
+              id={slugify(section.title)}
             >
               <h2 className="section-title">{section.title}</h2>
 
