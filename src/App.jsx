@@ -1,9 +1,13 @@
 import { useState, useEffect } from 'react'
 import './App.css'
 import { defaultSections } from './seedMenuData.js'
-import { db, storage, isFirebaseConfigured, signInFirebaseAnon } from './firebaseConfig'
+import {
+  db,
+  isFirebaseConfigured,
+  signInFirebaseAnon,
+  getFirebaseStorage,
+} from './firebaseConfig'
 import { doc, setDoc, onSnapshot, serverTimestamp } from 'firebase/firestore'
-import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage'
 
 const allergenOptions = [
   { value: '🌾 Wheat', label: 'Wheat' },
@@ -40,6 +44,75 @@ const allergenNormalizeMap = {
   '🌻 سمسم': '🌻 Sesame',
 }
 
+// Allergens are stored in English; these are the labels shown in Arabic mode.
+const allergenArabicLabels = {
+  '🌾 Wheat': '🌾 قمح',
+  '🥛 Milk': '🥛 حليب',
+  '🥚 Eggs': '🥚 بيض',
+  '🥜 Tree Nuts': '🥜 مكسرات',
+  '🐟 Fish': '🐟 سمك',
+  '🦐 Shellfish': '🦐 قشريات',
+  '🍞 Gluten': '🍞 جلوتين',
+  '🌿 Soy': '🌿 صويا',
+  '🌻 Sesame': '🌻 سمسم',
+  '🥜 Peanuts': '🥜 فول سوداني',
+  '🫘 Legumes': '🫘 بقوليات',
+}
+
+// Only the standard section names can be translated. Anything the admin types
+// in is shown exactly as entered, in either language.
+const sectionTitleArabic = {
+  'BEST SELLERS': 'الأكثر مبيعاً',
+  BREAKFAST: 'الإفطار',
+  APPETIZERS: 'المقبلات',
+  SALADS: 'السلطات',
+  SANDWICHES: 'الساندويتشات',
+  BURGERS: 'البرغر',
+  'MAIN COURSES': 'الأطباق الرئيسية',
+  'PASTA & PIZZA': 'الباستا والبيتزا',
+  SIDES: 'الأطباق الجانبية',
+  DESSERTS: 'الحلويات',
+  'HOT DRINKS': 'المشروبات الساخنة',
+  'COLD DRINKS': 'المشروبات الباردة',
+  SMOOTHIES: 'السموذي',
+  'FRESH JUICES': 'العصائر الطازجة',
+  LUNCH: 'الغداء',
+  DINNER: 'العشاء',
+}
+
+const uiText = {
+  en: {
+    searchLabel: 'Search the menu',
+    clearSearch: 'Clear search',
+    noResultsTitle: 'Nothing matches that search',
+    noResultsBody: 'Try a different word, or clear the search to see the full menu.',
+    sectionsNav: 'Menu sections',
+    kitchen: 'Sol Beach Kitchen',
+    welcomeTitle: 'Welcome 👋',
+    welcomeBody: 'Hi, welcome to Sol Beach Kitchen',
+    closeLabel: 'Close',
+    bestSeller: '★ Best Seller',
+    rights: '© 2026 Sol Beach Resort. All rights reserved.',
+    madeBy: 'Made by Sol Beach Resort',
+    switchTo: 'العربية',
+  },
+  ar: {
+    searchLabel: 'ابحث في القائمة',
+    clearSearch: 'مسح البحث',
+    noResultsTitle: 'لا توجد نتائج مطابقة',
+    noResultsBody: 'جرّب كلمة أخرى، أو امسح البحث لعرض القائمة كاملة.',
+    sectionsNav: 'أقسام القائمة',
+    kitchen: 'مطبخ سول بيتش',
+    welcomeTitle: 'أهلاً وسهلاً 👋',
+    welcomeBody: 'مرحباً بك في مطبخ سول بيتش',
+    closeLabel: 'إغلاق',
+    bestSeller: '★ الأكثر مبيعاً',
+    rights: '© 2026 منتجع سول بيتش. جميع الحقوق محفوظة.',
+    madeBy: 'من إعداد منتجع سول بيتش',
+    switchTo: 'English',
+  },
+}
+
 const normalizeAllergenValue = (value) => {
   if (!value) return ''
   const trimmed = String(value).trim()
@@ -65,8 +138,53 @@ const normalizeSavedSections = (sections) =>
     })),
   }))
 
+const slugify = (title) =>
+  String(title || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+
+// Random half keeps two items created in the same millisecond apart.
+const makeUniqueId = (prefix) => {
+  const random =
+    typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+      ? crypto.randomUUID().slice(0, 8)
+      : Math.random().toString(36).slice(2, 10)
+
+  return `${slugify(prefix) || 'item'}-${Date.now().toString(36)}-${random}`
+}
+
+// Sections used to be addressed by their title, so a rename orphaned every
+// item in them and two sections sharing a name were indistinguishable. Give
+// each one a stable id, derived from the title only when it does not already
+// have one, so existing saved menus keep working untouched.
+const withSectionIds = (sections) => {
+  const used = new Set()
+
+  sections.forEach((section) => {
+    if (section?.id) used.add(section.id)
+  })
+
+  return sections.map((section, sectionIndex) => {
+    if (section?.id) return section
+
+    const base = `sec-${slugify(section?.title) || `section-${sectionIndex + 1}`}`
+    let id = base
+    let suffix = 2
+
+    while (used.has(id)) {
+      id = `${base}-${suffix}`
+      suffix += 1
+    }
+
+    used.add(id)
+
+    return { ...section, id }
+  })
+}
+
 const addIds = (sections) =>
-  sections.map((section) => ({
+  withSectionIds(sections).map((section) => ({
     ...section,
     items: (section.items || []).map((item, itemIndex) => ({
       ...item,
@@ -75,12 +193,6 @@ const addIds = (sections) =>
       allergens: normalizeAllergens(item.allergens),
     })),
   }))
-
-const slugify = (title) =>
-  String(title || '')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
 
 const toLabel = (title) =>
   String(title || '')
@@ -118,21 +230,50 @@ function App() {
   const [newSectionTitle, setNewSectionTitle] = useState('')
   const [loading, setLoading] = useState(false)
   const [sections, setSections] = useState(() => loadSections())
+  const [searchQuery, setSearchQuery] = useState('')
+  const [language, setLanguage] = useState(() => {
+    try {
+      return localStorage.getItem('menuLang') === 'ar' ? 'ar' : 'en'
+    } catch {
+      return 'en'
+    }
+  })
 
-  // Chips are built from the live menu, so a section only gets one once it has
-  // something a customer can actually see.
-  const navSections = sections
-    .map((section) => {
-      const visibleItems = (section.items || []).filter((item) => item.visible !== false)
+  const isArabic = language === 'ar'
+  const t = uiText[language] || uiText.en
+  const trimmedQuery = searchQuery.trim().toLowerCase()
 
-      return {
-        title: section.title,
-        id: slugify(section.title),
-        count: visibleItems.length,
-        image: visibleItems.find((item) => item.image)?.image || '',
-      }
-    })
-    .filter((section) => section.id && section.count > 0)
+  const sectionHeading = (title) =>
+    isArabic ? sectionTitleArabic[String(title || '').toUpperCase()] || title : title
+
+  const sectionChipLabel = (title) =>
+    isArabic ? sectionTitleArabic[String(title || '').toUpperCase()] || title : toLabel(title)
+
+  const allergenLabel = (allergen) =>
+    isArabic ? allergenArabicLabels[allergen] || allergen : allergen
+
+  // What the customer actually sees: hidden items removed, then the search
+  // applied. Sections with nothing left to show drop out entirely.
+  const customerSections = sections
+    .map((section) => ({
+      ...section,
+      visibleItems: (section.items || []).filter((item) => {
+        if (item.visible === false) return false
+        if (!trimmedQuery) return true
+
+        return `${item.name || ''} ${item.description || ''}`
+          .toLowerCase()
+          .includes(trimmedQuery)
+      }),
+    }))
+    .filter((section) => section.visibleItems.length > 0)
+
+  // Chips follow the same list, so searching narrows the nav too.
+  const navSections = customerSections.map((section) => ({
+    id: section.id,
+    title: section.title,
+    image: section.visibleItems.find((item) => item.image)?.image || '',
+  }))
 
   const scrollToSection = (id) => {
     const target = document.getElementById(id)
@@ -166,6 +307,14 @@ function App() {
       if (frame) window.cancelAnimationFrame(frame)
     }
   }, [])
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('menuLang', language)
+    } catch (error) {
+      console.error('Unable to remember language choice', error)
+    }
+  }, [language])
 
   useEffect(() => {
     const handleKeyDown = (event) => {
@@ -363,12 +512,12 @@ function App() {
     }
   }
 
-  const handleItemChange = (sectionTitle, itemId, field, value) => {
+  const handleItemChange = (sectionId, itemId, field, value) => {
     setSaveError('')
 
     setSections((prevSections) =>
       prevSections.map((section) => {
-        if (section.title !== sectionTitle) return section
+        if (section.id !== sectionId) return section
 
         return {
           ...section,
@@ -385,12 +534,12 @@ function App() {
     )
   }
 
-  const handleAllergenToggle = (sectionTitle, itemId, allergen) => {
+  const handleAllergenToggle = (sectionId, itemId, allergen) => {
     setSaveError('')
 
     setSections((prevSections) =>
       prevSections.map((section) => {
-        if (section.title !== sectionTitle) return section
+        if (section.id !== sectionId) return section
 
         return {
           ...section,
@@ -412,14 +561,14 @@ function App() {
     )
   }
 
-  const handleImageUpload = async (sectionTitle, itemId, file) => {
+  const handleImageUpload = async (sectionId, itemId, file) => {
     if (!file) return
 
     const previewFile = () => {
       const reader = new FileReader()
 
       reader.onload = () => {
-        handleItemChange(sectionTitle, itemId, 'image', reader.result)
+        handleItemChange(sectionId, itemId, 'image', reader.result)
       }
 
       reader.readAsDataURL(file)
@@ -427,16 +576,20 @@ function App() {
 
     if (isFirebaseConfigured) {
       try {
+        // Loaded on demand: only an admin uploading a picture needs the
+        // Storage SDK, so customers never download it.
+        const [{ ref: storageRef, uploadBytes, getDownloadURL }, storage] =
+          await Promise.all([import('firebase/storage'), getFirebaseStorage()])
+
+        if (!storage) throw new Error('Firebase Storage unavailable')
+
         const fileName = file.name.replace(/\s+/g, '-')
-        const storagePath = `menu-images/${sectionTitle.replace(
-          /\s+/g,
-          '-'
-        )}/${itemId}-${Date.now()}-${fileName}`
+        const storagePath = `menu-images/${sectionId}/${itemId}-${Date.now()}-${fileName}`
         const uploadRef = storageRef(storage, storagePath)
         const snapshot = await uploadBytes(uploadRef, file)
         const imageUrl = await getDownloadURL(snapshot.ref)
 
-        handleItemChange(sectionTitle, itemId, 'image', imageUrl)
+        handleItemChange(sectionId, itemId, 'image', imageUrl)
         return
       } catch (error) {
         console.error('Firebase image upload failed', error)
@@ -449,14 +602,14 @@ function App() {
     previewFile()
   }
 
-  const handleRemoveImage = (sectionTitle, itemId) => {
-    handleItemChange(sectionTitle, itemId, 'image', '')
+  const handleRemoveImage = (sectionId, itemId) => {
+    handleItemChange(sectionId, itemId, 'image', '')
   }
 
-  const handleToggleVisible = (sectionTitle, itemId) => {
+  const handleToggleVisible = (sectionId, itemId) => {
     setSections((prevSections) =>
       prevSections.map((section) => {
-        if (section.title !== sectionTitle) return section
+        if (section.id !== sectionId) return section
 
         return {
           ...section,
@@ -473,18 +626,18 @@ function App() {
     )
   }
 
-  const handleRequestRemoveItem = (sectionTitle, itemId) => {
-    setItemToRemove({ sectionTitle, itemId })
+  const handleRequestRemoveItem = (sectionId, itemId) => {
+    setItemToRemove({ sectionId, itemId })
   }
 
   const handleConfirmRemoveItem = () => {
     if (!itemToRemove) return
 
-    const { sectionTitle, itemId } = itemToRemove
+    const { sectionId, itemId } = itemToRemove
 
     setSections((prevSections) =>
       prevSections.map((section) => {
-        if (section.title !== sectionTitle) return section
+        if (section.id !== sectionId) return section
 
         return {
           ...section,
@@ -501,7 +654,7 @@ function App() {
   }
 
   const getNewItem = (sectionTitle) => ({
-    id: `${sectionTitle}-${Date.now()}`.replace(/\s+/g, '-'),
+    id: makeUniqueId(sectionTitle),
     name: 'New item',
     description: '',
     calories: '',
@@ -512,14 +665,14 @@ function App() {
     allergens: [],
   })
 
-  const handleAddItem = (sectionTitle) => {
+  const handleAddItem = (sectionId) => {
     setSections((prevSections) =>
       prevSections.map((section) =>
-        section.title !== sectionTitle
+        section.id !== sectionId
           ? section
           : {
               ...section,
-              items: [...section.items, getNewItem(sectionTitle)],
+              items: [...section.items, getNewItem(section.title)],
             }
       )
     )
@@ -547,6 +700,7 @@ function App() {
     setSections((prevSections) => [
       ...prevSections,
       {
+        id: makeUniqueId(`sec-${title}`),
         title,
         items: [],
       },
@@ -578,8 +732,8 @@ function App() {
     window.setTimeout(() => setSaveMessage(''), 2500)
   }
 
-  const handleRequestRemoveSection = (sectionTitle) => {
-    setSectionToRemove(sectionTitle)
+  const handleRequestRemoveSection = (section) => {
+    setSectionToRemove({ id: section.id, title: section.title })
   }
 
   const handleCancelRemoveSection = () => {
@@ -589,8 +743,10 @@ function App() {
   const handleConfirmRemoveSection = () => {
     if (!sectionToRemove) return
 
+    // Matching on id removes exactly the section the admin clicked. Matching on
+    // title used to remove every section sharing that name.
     setSections((prevSections) =>
-      prevSections.filter((section) => section.title !== sectionToRemove)
+      prevSections.filter((section) => section.id !== sectionToRemove.id)
     )
 
     setSectionToRemove(null)
@@ -599,24 +755,24 @@ function App() {
     window.setTimeout(() => setSaveMessage(''), 2500)
   }
 
-  const handleDragStart = (event, sectionTitle, itemId) => {
+  const handleDragStart = (event, sectionId, itemId) => {
     event.dataTransfer.effectAllowed = 'move'
-    setDragInfo({ sectionTitle, itemId })
+    setDragInfo({ sectionId, itemId })
   }
 
   const handleDragOver = (event) => {
     event.preventDefault()
   }
 
-  const handleDrop = (event, sectionTitle, targetId) => {
+  const handleDrop = (event, sectionId, targetId) => {
     event.preventDefault()
 
-    if (!dragInfo || dragInfo.sectionTitle !== sectionTitle) return
+    if (!dragInfo || dragInfo.sectionId !== sectionId) return
     if (dragInfo.itemId === targetId) return
 
     setSections((prevSections) =>
       prevSections.map((section) => {
-        if (section.title !== sectionTitle) return section
+        if (section.id !== sectionId) return section
 
         const items = [...section.items]
         const fromIndex = items.findIndex((item) => item.id === dragInfo.itemId)
@@ -638,23 +794,70 @@ function App() {
   }
 
   return (
-    <div className="page">
+    <div
+      className="page"
+      dir={isArabic && !isAdmin ? 'rtl' : 'ltr'}
+      lang={isArabic && !isAdmin ? 'ar' : 'en'}
+    >
       {showPopup && (
         <div className="popup-overlay">
           <div className="popup-box">
-            <button className="popup-close" onClick={() => setShowPopup(false)}>
+            <button
+              className="popup-close"
+              type="button"
+              onClick={() => setShowPopup(false)}
+              aria-label={t.closeLabel}
+            >
               ✕
             </button>
-            <h2>Welcome 👋</h2>
-            <p>Hi, welcome to Sol Beach Kitchen</p>
+            <h2>{isAdmin ? uiText.en.welcomeTitle : t.welcomeTitle}</h2>
+            <p>{isAdmin ? uiText.en.welcomeBody : t.welcomeBody}</p>
           </div>
         </div>
       )}
 
       <div className="topbar">
-        <div className="search-placeholder">Search</div>
+        {isAdmin ? (
+          <div className="search-placeholder">Admin Dashboard</div>
+        ) : (
+          <div className="search-box">
+            <span className="search-icon" aria-hidden="true">
+              ⌕
+            </span>
+
+            <input
+              className="search-input"
+              type="search"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder={t.searchLabel}
+              aria-label={t.searchLabel}
+            />
+
+            {searchQuery && (
+              <button
+                className="search-clear"
+                type="button"
+                onClick={() => setSearchQuery('')}
+                aria-label={t.clearSearch}
+              >
+                ✕
+              </button>
+            )}
+          </div>
+        )}
 
         <div className="topbar-actions">
+          {!isAdmin && (
+            <button
+              className="lang-toggle"
+              type="button"
+              onClick={() => setLanguage(isArabic ? 'en' : 'ar')}
+            >
+              {t.switchTo}
+            </button>
+          )}
+
           {!isAdmin ? (
             <button className="admin-link" type="button" onClick={() => setShowAdminLogin(true)}>
               Admin
@@ -756,7 +959,7 @@ function App() {
 
             <h2>Confirm section removal</h2>
             <p>
-              Are you sure you want to remove the section "{sectionToRemove}"?
+              Are you sure you want to remove the section "{sectionToRemove.title}"?
               All items inside it will be removed.
             </p>
 
@@ -811,7 +1014,7 @@ function App() {
           </section>
 
           {sections.map((section, sectionIndex) => (
-            <section className="admin-section" key={section.title}>
+            <section className="admin-section" key={section.id}>
               <div className="admin-section-header">
                 <div>
                   <h2>{section.title}</h2>
@@ -840,7 +1043,7 @@ function App() {
                   <button
                     type="button"
                     className="admin-remove-section-button"
-                    onClick={() => handleRequestRemoveSection(section.title)}
+                    onClick={() => handleRequestRemoveSection(section)}
                   >
                     Remove Section
                   </button>
@@ -855,13 +1058,13 @@ function App() {
                       dragInfo?.itemId === item.id ? 'dragging' : ''
                     }`}
                     onDragOver={handleDragOver}
-                    onDrop={(event) => handleDrop(event, section.title, item.id)}
+                    onDrop={(event) => handleDrop(event, section.id, item.id)}
                   >
                     <div className="admin-item-top">
                       <div
                         className="drag-handle"
                         draggable
-                        onDragStart={(event) => handleDragStart(event, section.title, item.id)}
+                        onDragStart={(event) => handleDragStart(event, section.id, item.id)}
                         onDragEnd={() => setDragInfo(null)}
                       >
                         ☰
@@ -875,7 +1078,7 @@ function App() {
                       <button
                         type="button"
                         className="admin-remove-item-button"
-                        onClick={() => handleRequestRemoveItem(section.title, item.id)}
+                        onClick={() => handleRequestRemoveItem(section.id, item.id)}
                       >
                         ✕
                       </button>
@@ -887,7 +1090,7 @@ function App() {
                         className="admin-input"
                         value={item.name}
                         onChange={(event) =>
-                          handleItemChange(section.title, item.id, 'name', event.target.value)
+                          handleItemChange(section.id, item.id, 'name', event.target.value)
                         }
                       />
                     </label>
@@ -898,7 +1101,7 @@ function App() {
                         className="admin-textarea"
                         value={item.description}
                         onChange={(event) =>
-                          handleItemChange(section.title, item.id, 'description', event.target.value)
+                          handleItemChange(section.id, item.id, 'description', event.target.value)
                         }
                       />
                     </label>
@@ -914,7 +1117,7 @@ function App() {
                               type="button"
                               key={option.value}
                               className={`admin-allergen-chip ${selected ? 'selected' : ''}`}
-                              onClick={() => handleAllergenToggle(section.title, item.id, option.value)}
+                              onClick={() => handleAllergenToggle(section.id, item.id, option.value)}
                             >
                               {option.value}
                             </button>
@@ -934,7 +1137,7 @@ function App() {
                           className="admin-input"
                           value={item.image || ''}
                           onChange={(event) =>
-                            handleItemChange(section.title, item.id, 'image', event.target.value)
+                            handleItemChange(section.id, item.id, 'image', event.target.value)
                           }
                         />
                       </label>
@@ -945,7 +1148,7 @@ function App() {
                           type="file"
                           accept="image/*"
                           onChange={(event) =>
-                            handleImageUpload(section.title, item.id, event.target.files?.[0])
+                            handleImageUpload(section.id, item.id, event.target.files?.[0])
                           }
                         />
                       </label>
@@ -953,7 +1156,7 @@ function App() {
                       <button
                         type="button"
                         className="admin-remove-button"
-                        onClick={() => handleRemoveImage(section.title, item.id)}
+                        onClick={() => handleRemoveImage(section.id, item.id)}
                       >
                         Remove picture
                       </button>
@@ -961,7 +1164,7 @@ function App() {
                       <button
                         type="button"
                         className="admin-toggle-button"
-                        onClick={() => handleToggleVisible(section.title, item.id)}
+                        onClick={() => handleToggleVisible(section.id, item.id)}
                       >
                         {item.visible === false ? 'Show item' : 'Hide item'}
                       </button>
@@ -982,7 +1185,7 @@ function App() {
                           className="admin-input"
                           value={item.price}
                           onChange={(event) =>
-                            handleItemChange(section.title, item.id, 'price', event.target.value)
+                            handleItemChange(section.id, item.id, 'price', event.target.value)
                           }
                         />
                       </label>
@@ -993,7 +1196,7 @@ function App() {
                           className="admin-input"
                           value={item.calories}
                           onChange={(event) =>
-                            handleItemChange(section.title, item.id, 'calories', event.target.value)
+                            handleItemChange(section.id, item.id, 'calories', event.target.value)
                           }
                         />
                       </label>
@@ -1006,7 +1209,7 @@ function App() {
                 <button
                   type="button"
                   className="admin-button admin-add-button"
-                  onClick={() => handleAddItem(section.title)}
+                  onClick={() => handleAddItem(section.id)}
                 >
                   + Add item
                 </button>
@@ -1018,11 +1221,11 @@ function App() {
         <>
           <header className="hero">
             <img src="/logo.png" alt="Sol Beach Resort" className="hero-image" />
-            <p className="subtitle">Sol Beach Kitchen</p>
+            <p className="subtitle">{t.kitchen}</p>
           </header>
 
           {navSections.length > 0 && (
-            <nav className="category-nav" aria-label="Menu sections">
+            <nav className="category-nav" aria-label={t.sectionsNav}>
               <div className="category-scroll">
                 {navSections.map((section) => (
                   <button
@@ -1036,36 +1239,41 @@ function App() {
                         <img src={section.image} alt="" loading="lazy" />
                       ) : (
                         <span className="category-thumb-fallback" aria-hidden="true">
-                          {toLabel(section.title).charAt(0)}
+                          {sectionChipLabel(section.title).charAt(0)}
                         </span>
                       )}
                     </span>
 
-                    <span className="category-label">{toLabel(section.title)}</span>
+                    <span className="category-label">{sectionChipLabel(section.title)}</span>
                   </button>
                 ))}
               </div>
             </nav>
           )}
 
-          {sections.map((section) => (
+          {customerSections.length === 0 && (
+            <section className="menu-empty">
+              <h2>{t.noResultsTitle}</h2>
+              <p>{t.noResultsBody}</p>
+            </section>
+          )}
+
+          {customerSections.map((section) => (
             <section
               className={`menu-section ${section.title === 'BEST SELLERS' ? 'best-sellers' : ''}`}
-              key={section.title}
-              id={slugify(section.title)}
+              key={section.id}
+              id={section.id}
             >
-              <h2 className="section-title">{section.title}</h2>
+              <h2 className="section-title">{sectionHeading(section.title)}</h2>
 
               <div className="menu-grid">
-                {section.items
-                  .filter((item) => item.visible !== false)
-                  .map((item) => (
+                {section.visibleItems.map((item) => (
                     <article className="menu-card" key={item.id || item.name}>
                       <div className="menu-content">
                         <h3>
                           {item.name}
                           {section.title === 'BEST SELLERS' && (
-                            <span className="badge">★ Best Seller</span>
+                            <span className="badge">{t.bestSeller}</span>
                           )}
                         </h3>
 
@@ -1075,7 +1283,7 @@ function App() {
                           <div className="allergen-row">
                             {item.allergens.map((allergen, allergenIndex) => (
                               <span key={allergenIndex} className="allergen-badge">
-                                {allergen}
+                                {allergenLabel(allergen)}
                               </span>
                             ))}
                           </div>
@@ -1088,7 +1296,9 @@ function App() {
                       </div>
 
                       <div className="image-wrap">
-                        {item.image ? <img src={item.image} alt={item.name} /> : null}
+                        {item.image ? (
+                          <img src={item.image} alt={item.name} loading="lazy" />
+                        ) : null}
                       </div>
                     </article>
                   ))}
@@ -1099,8 +1309,8 @@ function App() {
       )}
 
       <footer className="footer">
-        <p>© 2026 Sol Beach Resort. All rights reserved.</p>
-        <span>Made by Sol Beach Resort</span>
+        <p>{isAdmin ? uiText.en.rights : t.rights}</p>
+        <span>{isAdmin ? uiText.en.madeBy : t.madeBy}</span>
       </footer>
     </div>
   )

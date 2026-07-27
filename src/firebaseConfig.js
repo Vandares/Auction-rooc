@@ -1,6 +1,5 @@
 import { initializeApp } from 'firebase/app'
 import { getFirestore } from 'firebase/firestore'
-import { getStorage } from 'firebase/storage'
 import { getAuth, signInAnonymously } from 'firebase/auth'
 
 const firebaseConfig = {
@@ -26,8 +25,23 @@ export const firebaseApp = isFirebaseConfigured
   : null
 
 export const db = isFirebaseConfigured ? getFirestore(firebaseApp) : null
-export const storage = isFirebaseConfigured ? getStorage(firebaseApp) : null
 export const auth = isFirebaseConfigured ? getAuth(firebaseApp) : null
+
+// Only the admin image upload touches Storage, so its SDK is fetched on demand
+// instead of shipping in the bundle every customer downloads.
+let storagePromise = null
+
+export const getFirebaseStorage = () => {
+  if (!firebaseApp) return Promise.resolve(null)
+
+  if (!storagePromise) {
+    storagePromise = import('firebase/storage').then(({ getStorage }) =>
+      getStorage(firebaseApp)
+    )
+  }
+
+  return storagePromise
+}
 
 export const signInFirebaseAnon = async () => {
   if (!auth) return null

@@ -46,6 +46,103 @@ body {
   letter-spacing: 0.5px;
 }
 
+/* SEARCH */
+.search-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 420px;
+}
+
+.search-icon {
+  position: absolute;
+  inset-inline-start: 10px;
+  color: #a3a3a3;
+  font-size: 20px;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.search-input {
+  width: 100%;
+  min-width: 0;
+  height: 38px;
+  padding-inline: 32px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: #ffffff;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 15px;
+}
+
+.search-input::placeholder {
+  color: #a3a3a3;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+/* the browser's own clear affordance would sit on top of ours */
+.search-input::-webkit-search-cancel-button {
+  display: none;
+}
+
+.search-clear {
+  position: absolute;
+  inset-inline-end: 8px;
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 50%;
+  background: #e2e2e2;
+  color: #555;
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+/* LANGUAGE TOGGLE */
+.lang-toggle {
+  border: 1px solid var(--accent);
+  background: transparent;
+  color: var(--accent);
+  border-radius: 16px;
+  padding: 5px 12px;
+  font-family: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.lang-toggle:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
+/* EMPTY / NO RESULTS */
+.menu-empty {
+  padding: 40px 24px 20px;
+  text-align: center;
+  color: var(--muted);
+}
+
+.menu-empty h2 {
+  margin: 0 0 8px;
+  color: var(--accent);
+  font-size: 22px;
+  font-weight: 500;
+}
+
+.menu-empty p {
+  margin: 0;
+  font-size: 15px;
+}
+
 /* ☰ MENU ICON */
 .menu-icon {
   width: 36px;
@@ -168,7 +265,7 @@ body {
 /* IMAGE SIDE */
 .image-wrap {
   background: #efefef;
-  border-left: 1px solid var(--border);
+  border-inline-start: 1px solid var(--border);
   padding: 6px;
 }
 
@@ -270,7 +367,7 @@ body {
   }
 
   .image-wrap {
-    border-left: 1px solid var(--border);
+    border-inline-start: 1px solid var(--border);
     border-top: none;
     min-width: 120px;
   }
@@ -1344,3 +1441,51 @@ body {
   }
 }
 
+
+/* RTL / ARABIC
+   Grid and flex already follow the inline direction, so this only covers the
+   few places that need an explicit nudge. Scoped to [dir='rtl'], which is set
+   on .page for the customer view only -- the admin dashboard stays LTR. */
+[dir='rtl'] .description,
+[dir='rtl'] .hero .subtitle {
+  font-style: normal;
+}
+
+[dir='rtl'] .section-title {
+  letter-spacing: 0;
+}
+
+[dir='rtl'] .menu-content h3 {
+  letter-spacing: 0;
+}
+
+[dir='rtl'] .category-scroll {
+  /* the row should start from the right edge under RTL */
+  direction: rtl;
+}
+
+/* Item names, descriptions, calories and prices are whatever the admin typed,
+   so let each one pick its own direction from its first strong character.
+   Without this, "300 cal" renders as "cal 300" inside an RTL page. */
+[dir='rtl'] .menu-content h3,
+[dir='rtl'] .description,
+[dir='rtl'] .meta span {
+  unicode-bidi: plaintext;
+}
+
+@media (max-width: 600px) {
+  .search-input {
+    font-size: 14px;
+    height: 34px;
+  }
+
+  .lang-toggle {
+    padding: 4px 9px;
+    font-size: 12px;
+  }
+
+  .topbar {
+    gap: 8px;
+    padding: 0 12px;
+  }
+}
