@@ -78,6 +78,11 @@ const sectionTitleArabic = {
   'FRESH JUICES': 'العصائر الطازجة',
   LUNCH: 'الغداء',
   DINNER: 'العشاء',
+  // Renamed sections. The old keys above are kept so the Arabic labels stay
+  // correct on any menu that has not been renamed yet.
+  'FRESH FRUIT & JUICES': 'الفواكه والعصائر الطازجة',
+  'ICED SMOOTHIES': 'سموذي مثلج',
+  'SOL CREPERIE': 'سول كريبري',
 }
 
 const uiText = {
@@ -447,16 +452,24 @@ function App() {
     setSaveError('')
   }
 
-  const canSave = sections.every((section) =>
+  const everySectionNamed = sections.every((section) => section.title?.trim().length > 0)
+
+  const everyItemComplete = sections.every((section) =>
     section.items.every(
       (item) =>
         item.visible === false || (item.name?.trim().length > 0 && item.price?.trim().length > 0)
     )
   )
 
+  const canSave = everySectionNamed && everyItemComplete
+
   const handleSave = async () => {
     if (!canSave) {
-      setSaveError('Name and Price are required for all visible items')
+      setSaveError(
+        everySectionNamed
+          ? 'Name and Price are required for all visible items'
+          : 'Every section needs a name'
+      )
       setSaveMessage('')
       return
     }
@@ -674,6 +687,25 @@ function App() {
               ...section,
               items: [...section.items, getNewItem(section.title)],
             }
+      )
+    )
+  }
+
+  // Safe now that items are tied to their section by id rather than by title.
+  const handleSectionTitleChange = (sectionId, value) => {
+    setSaveError('')
+
+    setSections((prevSections) =>
+      prevSections.map((section) =>
+        section.id !== sectionId ? section : { ...section, title: value }
+      )
+    )
+  }
+
+  const handleSectionTitleBlur = (sectionId) => {
+    setSections((prevSections) =>
+      prevSections.map((section) =>
+        section.id !== sectionId ? section : { ...section, title: section.title.trim() }
       )
     )
   }
@@ -1016,8 +1048,19 @@ function App() {
           {sections.map((section, sectionIndex) => (
             <section className="admin-section" key={section.id}>
               <div className="admin-section-header">
-                <div>
-                  <h2>{section.title}</h2>
+                <div className="admin-section-identity">
+                  <label className="admin-section-name">
+                    Section name
+                    <input
+                      className="admin-input"
+                      value={section.title}
+                      onChange={(event) =>
+                        handleSectionTitleChange(section.id, event.target.value)
+                      }
+                      onBlur={() => handleSectionTitleBlur(section.id)}
+                    />
+                  </label>
+
                   <span>{section.items.length} items</span>
                 </div>
 

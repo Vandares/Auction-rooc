@@ -7,9 +7,9 @@ export const defaultSections = [
   { title: 'MAIN COURSES', items: [] },
   { title: 'PASTA & PIZZA', items: [] },
   { title: 'SIDES', items: [] },
-  { title: 'DESSERTS', items: [] },
+  { title: 'SOL CREPERIE', items: [] },
   { title: 'HOT DRINKS', items: [] },
   { title: 'COLD DRINKS', items: [] },
-  { title: 'SMOOTHIES', items: [] },
-  { title: 'FRESH JUICES', items: [] },
+  { title: 'ICED SMOOTHIES', items: [] },
+  { title: 'FRESH FRUIT & JUICES', items: [] },
 ]

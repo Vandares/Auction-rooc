@@ -1489,3 +1489,45 @@ body {
     padding: 0 12px;
   }
 }
+
+/* ADMIN: rename a section */
+.admin-section-identity {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.admin-section-name {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--muted);
+  min-width: 0;
+}
+
+.admin-section-name .admin-input {
+  min-width: 220px;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--accent);
+  text-transform: uppercase;
+}
+
+@media (max-width: 600px) {
+  .admin-section-identity {
+    width: 100%;
+  }
+
+  .admin-section-name {
+    width: 100%;
+  }
+
+  .admin-section-name .admin-input {
+    min-width: 0;
+    width: 100%;
+    font-size: 16px;
+  }
+}
